@@ -1,0 +1,759 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, FileText, Save, UploadCloud } from "lucide-react"
+import Link from "next/link"
+import type { FormEvent } from "react"
+import { toast } from "sonner"
+import { AddItemLabelPreview } from "@/components/inventory/add-item-label-preview"
+import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useDB } from "@/contexts/db-context"
+import { useRouter } from "next/navigation"
+import { InventoryItem } from "@/lib/db"
+import { MasterDropdown } from "@/components/masters/master-dropdown"
+import { SupplierDropdown } from "@/components/inventory/supplier-dropdown"
+
+export default function AddInventoryItemPage() {
+  const router = useRouter();
+  const { add, db, getAll } = useDB();
+  
+  const [itemName, setItemName] = useState("")
+  const [itemCategory, setItemCategory] = useState("")
+  const [itemDescription, setItemDescription] = useState("")
+  const [itemQuantity, setItemQuantity] = useState("")
+  const [itemCost, setItemCost] = useState("")
+  const [itemSupplier, setItemSupplier] = useState("")
+  const [itemWeight, setItemWeight] = useState("")
+  const [itemMetal, setItemMetal] = useState("")
+  const [itemPurity, setItemPurity] = useState("")
+  const [labelQuantity, setLabelQuantity] = useState("1")
+  const [labelType, setLabelType] = useState("standard")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  
+  // Label inclusions
+  const [includeProductName, setIncludeProductName] = useState(true)
+  const [includePrice, setIncludePrice] = useState(true)
+  const [includeBarcode, setIncludeBarcode] = useState(true)
+  const [includeDate, setIncludeDate] = useState(true)
+  const [includeQr, setIncludeQr] = useState(true)
+  const [includeMetal, setIncludeMetal] = useState(true)
+  const [includePurity, setIncludePurity] = useState(true)
+  const [includeWeight, setIncludeWeight] = useState(true)
+
+  // Set isMounted after component mounts to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Auto-generate name when category changes
+  useEffect(() => {
+    if (!itemCategory) return;
+
+    const generateItemName = async () => {
+      try {
+        // Get existing inventory items with this category
+        const inventoryItems = await getAll<InventoryItem>('inventory');
+        const categoryPrefix = itemCategory.substring(0, 3).toUpperCase();
+        
+        // Find highest sequence number for this category
+        let highestSequence = 0;
+        
+        inventoryItems.forEach(item => {
+          if (item.name && item.name.startsWith(categoryPrefix)) {
+            const sequencePart = item.name.substring(4); // Skip prefix and hyphen
+            const sequenceNum = parseInt(sequencePart);
+            if (!isNaN(sequenceNum) && sequenceNum > highestSequence) {
+              highestSequence = sequenceNum;
+            }
+          }
+        });
+        
+        // Generate new name with incremented sequence
+        const newSequence = highestSequence + 1;
+        const paddedSequence = newSequence.toString().padStart(4, '0');
+        const generatedName = `${categoryPrefix}-${paddedSequence}`;
+        
+        setItemName(generatedName);
+      } catch (error) {
+        console.error("Error generating item name:", error);
+      }
+    };
+    
+    generateItemName();
+  }, [itemCategory, getAll]);
+
+  // Ensure category has a valid value once dropdown is mounted
+  useEffect(() => {
+    if (isMounted && !itemCategory) {
+      // Set a default category value after a short delay to allow MasterDropdown to load
+      const timeoutId = setTimeout(() => {
+        if (!itemCategory) {
+          setItemCategory("Furniture")
+          console.log("Set default category to Furniture")
+        }
+      }, 1000)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [isMounted, itemCategory])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0])
+    }
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    console.log("Submit clicked with values:", {
+      name: itemName,
+      category: itemCategory,
+      supplier: itemSupplier,
+      quantity: itemQuantity
+    })
+
+    if (!itemName) {
+      toast.error("Please enter an item name")
+      return
+    }
+
+    if (!itemCategory) {
+      toast.error("Please select a category")
+      return
+    }
+
+    if (!itemQuantity || parseInt(itemQuantity) < 0) {
+      toast.error("Please enter a valid quantity")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Create new inventory item
+      const newItem: InventoryItem = {
+        name: itemName,
+        category: itemCategory,
+        description: itemDescription || "",
+        quantity: parseInt(itemQuantity) || 0,
+        cost: itemCost ? parseFloat(itemCost) : 0,
+        supplier: itemSupplier || "",
+        weight: itemWeight ? parseFloat(itemWeight) : undefined,
+        metal: itemMetal || undefined,
+        purity: itemPurity || undefined,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      console.log("Saving inventory item:", newItem)
+      
+      // Generate ID explicitly
+      const id = db.generateId('ITEM')
+      newItem.id = id
+      
+      // Add to database
+      await add('inventory', newItem)
+      
+      toast.success("Inventory item added successfully")
+      
+      // Redirect back to inventory page
+      router.push('/inventory')
+    } catch (error) {
+      console.error("Error adding inventory item:", error)
+      toast.error(`Failed to add inventory item: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handlePrintLabels = () => {
+    if (!itemName) {
+      toast.error("Please enter an item name before printing labels")
+      return
+    }
+
+    // Use setTimeout to ensure the DOM elements are rendered
+    setTimeout(() => {
+      // Get references to the barcode and QR code elements
+      const qrCodeElement = document.getElementById('label-qr-code') as HTMLImageElement
+      const barcodeElement = document.querySelector('#label-barcode svg') as SVGElement
+      
+      if (!qrCodeElement && includeQr) {
+        toast.error("QR code element not found")
+        return
+      }
+
+      if (!barcodeElement && includeBarcode) {
+        toast.error("Barcode element not found")
+        return
+      }
+
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank')
+      if (!printWindow) {
+        toast.error("Unable to open print window. Please check your browser settings.")
+        return
+      }
+
+      // Convert SVG barcode to data URL if it exists
+      let barcodeDataUrl = ''
+      if (barcodeElement && includeBarcode) {
+        const svgData = new XMLSerializer().serializeToString(barcodeElement)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Set canvas dimensions to match the SVG
+        const svgRect = barcodeElement.getBoundingClientRect()
+        canvas.width = svgRect.width
+        canvas.height = svgRect.height
+        
+        // Create an image from SVG
+        const img = new Image()
+        img.onload = function() {
+          // Draw the image to the canvas and get data URL
+          if (ctx) {
+            ctx.drawImage(img, 0, 0)
+            barcodeDataUrl = canvas.toDataURL('image/png')
+
+            // Now that we have the barcode image, generate the HTML content
+            generatePrintContent(printWindow, qrCodeElement?.src, barcodeDataUrl)
+          }
+        }
+        
+        // Set the SVG as the image source
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+      } else {
+        // If no barcode needed, proceed with just the QR code
+        generatePrintContent(printWindow, qrCodeElement?.src, '')
+      }
+    }, 500)
+  }
+
+  // Helper function to generate the print content
+  const generatePrintContent = (printWindow: Window, qrCodeSrc: string = '', barcodeSrc: string = '') => {
+    // Generate label content
+    const labelContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Inventory Labels - ${itemName}</title>
+        <style>
+          body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+          }
+          .label-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+          }
+          .label {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            width: 300px;
+            height: 170px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+          }
+          .label-header {
+            display: flex;
+            justify-content: space-between;
+          }
+          .label-info {
+            flex: 1;
+          }
+          .product-name {
+            font-weight: bold;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .product-meta {
+            color: #666;
+            font-size: 12px;
+            margin: 2px 0;
+          }
+          .qr-code {
+            width: 60px;
+            height: 60px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            padding: 5px;
+          }
+          .label-footer {
+            margin-top: auto;
+          }
+          .date-price {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+          }
+          .date {
+            color: #666;
+            font-size: 12px;
+          }
+          .price {
+            font-weight: bold;
+            font-size: 18px;
+          }
+          .barcode {
+            margin-top: 10px;
+            text-align: center;
+          }
+          .barcode img {
+            max-width: 100%;
+            height: 40px;
+          }
+          @media print {
+            @page {
+              size: auto;
+              margin: 0;
+            }
+            body {
+              padding: 10px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label-container">
+          ${Array(parseInt(labelQuantity)).fill(0).map(() => `
+            <div class="label">
+              <div class="label-header">
+                <div class="label-info">
+                  ${includeProductName ? `<p class="product-name">${itemName}</p>` : ''}
+                  ${includeMetal && itemMetal ? `<p class="product-meta">Metal: ${itemMetal}</p>` : ''}
+                  ${includePurity && itemPurity ? `<p class="product-meta">Purity: ${itemPurity}</p>` : ''}
+                  ${includeWeight && itemWeight ? `<p class="product-meta">Weight: ${itemWeight}g</p>` : ''}
+                </div>
+                ${includeQr && qrCodeSrc ? `<img class="qr-code" src="${qrCodeSrc}" />` : ''}
+              </div>
+              <div class="label-footer">
+                <div class="date-price">
+                  ${includeDate ? `<span class="date">Added: ${new Date().toLocaleDateString()}</span>` : ''}
+                  ${includePrice ? `<span class="price">${itemCost ? `₹${parseFloat(itemCost).toFixed(2)}` : '₹0.00'}</span>` : ''}
+                </div>
+                ${includeBarcode && barcodeSrc ? `
+                  <div class="barcode">
+                    <img src="${barcodeSrc}" />
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(() => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `
+
+    // Write to the new window and trigger print
+    printWindow.document.open()
+    printWindow.document.write(labelContent)
+    printWindow.document.close()
+
+    toast.success(`${labelQuantity} label(s) sent to printer`)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center">
+          <Button variant="ghost" size="sm" asChild className="mr-2">
+            <Link href="/inventory">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Inventory
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Add Inventory Item</h1>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Adding..." : "Add Item"}
+          </Button>
+          <Button variant="outline" type="button" onClick={handlePrintLabels}>
+            <FileText className="mr-2 h-4 w-4" />
+            Print Labels
+          </Button>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Enter the essential details for this inventory item</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="item-name">Item Name *</Label>
+                    <Input 
+                      id="item-name" 
+                      value={itemName} 
+                      onChange={(e) => setItemName(e.target.value)}
+                      readOnly
+                      disabled 
+                      className="bg-muted" 
+                      title="Name is auto-generated from category"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-generated from category
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-category">Category *</Label>
+                    {isMounted ? (
+                      <MasterDropdown
+                        masterType="category"
+                        value={itemCategory}
+                        onValueChange={setItemCategory}
+                        placeholder="Select a category"
+                        triggerClassName="w-full"
+                      />
+                    ) : (
+                      <Select value={itemCategory} onValueChange={setItemCategory}>
+                        <SelectTrigger id="item-category">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="loading">Loading...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-metal">Metal</Label>
+                    {isMounted ? (
+                      <MasterDropdown
+                        masterType="metal"
+                        value={itemMetal}
+                        onValueChange={setItemMetal}
+                        placeholder="Select a metal type"
+                        triggerClassName="w-full"
+                      />
+                    ) : (
+                      <Select value={itemMetal} onValueChange={setItemMetal}>
+                        <SelectTrigger id="item-metal">
+                          <SelectValue placeholder="Select a metal type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="loading">Loading...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-purity">Purity</Label>
+                    {isMounted ? (
+                      <MasterDropdown
+                        masterType="purity"
+                        value={itemPurity}
+                        onValueChange={setItemPurity}
+                        placeholder="Select purity"
+                        triggerClassName="w-full"
+                      />
+                    ) : (
+                      <Select value={itemPurity} onValueChange={setItemPurity}>
+                        <SelectTrigger id="item-purity">
+                          <SelectValue placeholder="Select purity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="loading">Loading...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-supplier">Supplier</Label>
+                    {isMounted ? (
+                      <SupplierDropdown
+                        value={itemSupplier}
+                        onValueChange={setItemSupplier}
+                        placeholder="Select a supplier"
+                        className="w-full"
+                      />
+                    ) : (
+                      <Select value={itemSupplier} onValueChange={setItemSupplier}>
+                        <SelectTrigger id="item-supplier">
+                          <SelectValue placeholder="Select a supplier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="loading">Loading...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-quantity">Quantity *</Label>
+                    <Input
+                      id="item-quantity"
+                      type="number"
+                      min="0"
+                      value={itemQuantity}
+                      onChange={(e) => setItemQuantity(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="item-cost">Purchase Cost (₹)</Label>
+                    <Input
+                      id="item-cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={itemCost}
+                      onChange={(e) => setItemCost(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="item-weight">Weight (grams)</Label>
+                    <Input
+                      id="item-weight"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={itemWeight}
+                      onChange={(e) => setItemWeight(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="item-description">Description</Label>
+                  <Textarea
+                    id="item-description"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="item-image">Product Image</Label>
+                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-md p-8 hover:bg-muted/50 transition-colors cursor-pointer">
+                    <input id="item-image" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    <label htmlFor="item-image" className="cursor-pointer flex flex-col items-center space-y-2">
+                      {selectedFile ? (
+                        <>
+                          <div className="h-32 w-32 rounded-md bg-muted flex items-center justify-center">
+                            <FileText className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm font-medium">{selectedFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="h-12 w-12 text-muted-foreground" />
+                          <p className="text-sm font-medium">Drag and drop or click to upload</p>
+                          <p className="text-xs text-muted-foreground">Supports JPG, PNG, GIF (max 10MB)</p>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Label Configuration Section */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Label Configuration</CardTitle>
+                <CardDescription>Configure and print labels for this inventory item</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="label-quantity">Number of Labels</Label>
+                  <Select value={labelQuantity} onValueChange={setLabelQuantity}>
+                    <SelectTrigger id="label-quantity">
+                      <SelectValue placeholder="Select quantity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 10, 20, 50, 100].map((qty) => (
+                        <SelectItem key={qty} value={qty.toString()}>
+                          {qty}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="label-type">Label Type</Label>
+                  <Select value={labelType} onValueChange={setLabelType}>
+                    <SelectTrigger id="label-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard (2.25" x 1.25")</SelectItem>
+                      <SelectItem value="large">Large (4" x 2")</SelectItem>
+                      <SelectItem value="small">Small (1" x 0.75")</SelectItem>
+                      <SelectItem value="shipping">Shipping (4" x 6")</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Include on Label</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-name" 
+                        checked={includeProductName}
+                        onCheckedChange={(checked) => setIncludeProductName(!!checked)}
+                      />
+                      <Label htmlFor="include-name" className="text-sm">
+                        Product Name
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-metal" 
+                        checked={includeMetal}
+                        onCheckedChange={(checked) => setIncludeMetal(!!checked)}
+                      />
+                      <Label htmlFor="include-metal" className="text-sm">
+                        Metal
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-purity" 
+                        checked={includePurity}
+                        onCheckedChange={(checked) => setIncludePurity(!!checked)}
+                      />
+                      <Label htmlFor="include-purity" className="text-sm">
+                        Purity
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-weight" 
+                        checked={includeWeight}
+                        onCheckedChange={(checked) => setIncludeWeight(!!checked)}
+                      />
+                      <Label htmlFor="include-weight" className="text-sm">
+                        Weight
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-price" 
+                        checked={includePrice}
+                        onCheckedChange={(checked) => setIncludePrice(!!checked)}
+                      />
+                      <Label htmlFor="include-price" className="text-sm">
+                        Price
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-barcode" 
+                        checked={includeBarcode}
+                        onCheckedChange={(checked) => setIncludeBarcode(!!checked)}
+                      />
+                      <Label htmlFor="include-barcode" className="text-sm">
+                        Barcode
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-date" 
+                        checked={includeDate}
+                        onCheckedChange={(checked) => setIncludeDate(!!checked)}
+                      />
+                      <Label htmlFor="include-date" className="text-sm">
+                        Date
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-qr" 
+                        checked={includeQr}
+                        onCheckedChange={(checked) => setIncludeQr(!!checked)}
+                      />
+                      <Label htmlFor="include-qr" className="text-sm">
+                        QR Code
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                <Button className="w-full" type="button" onClick={handlePrintLabels}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Print {labelQuantity} Label{Number.parseInt(labelQuantity) !== 1 ? "s" : ""}
+                </Button>
+
+                <Separator className="my-4" />
+
+                <div className="space-y-2">
+                  <Label>Label Preview</Label>
+                  <div className="pt-2" id="label-preview">
+                    <AddItemLabelPreview
+                      name={itemName || "Product Name"}
+                      price={itemCost ? `₹${Number.parseFloat(itemCost).toFixed(2)}` : "₹0.00"}
+                      category={itemCategory}
+                      metal={itemMetal}
+                      purity={itemPurity}
+                      weight={itemWeight}
+                      includeProductName={includeProductName}
+                      includePrice={includePrice}
+                      includeBarcode={includeBarcode}
+                      includeDate={includeDate}
+                      includeQr={includeQr}
+                      includeMetal={includeMetal}
+                      includePurity={includePurity}
+                      includeWeight={includeWeight}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
