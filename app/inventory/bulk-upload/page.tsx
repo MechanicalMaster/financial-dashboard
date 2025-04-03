@@ -92,7 +92,7 @@ export default function BulkUploadPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'inventory_upload_template.csv'
+    link.download = 'stock_upload_template.csv'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -122,7 +122,7 @@ export default function BulkUploadPage() {
       const dataRows = lines.slice(1);
       stats.total = dataRows.length;
       
-      // Fetch existing inventory items to check for category prefixes
+      // Fetch existing stock items to check for category prefixes
       const existingItems = await getAll<InventoryItem>('inventory');
       const existingItemsMap = new Map<string, number>(); // Map to track highest sequence per category
       
@@ -182,7 +182,7 @@ export default function BulkUploadPage() {
             existingItemsMap.set(categoryPrefix, newSequence);
           }
           
-          // Create new inventory item
+          // Create new stock item
           const newItem: InventoryItem = {
             name: itemName,
             category: category.trim(),
@@ -267,12 +267,12 @@ export default function BulkUploadPage() {
       setUploadStats(stats)
       
       if (stats.failed === 0) {
-        toast.success(`Successfully imported ${stats.success} inventory items`)
+        toast.success(`Successfully imported ${stats.success} stock items`)
       } else {
         toast.warning(`Imported ${stats.success} items with ${stats.failed} errors`)
       }
     } catch (error) {
-      console.error("Error uploading inventory:", error)
+      console.error("Error uploading stock:", error)
       toast.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsUploading(false)
@@ -294,7 +294,7 @@ export default function BulkUploadPage() {
               Back to Inventory
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Bulk Upload Inventory</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Bulk Upload Stock</h1>
         </div>
       </div>
 
@@ -302,9 +302,9 @@ export default function BulkUploadPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Upload Inventory Items</CardTitle>
+              <CardTitle>Upload Stock Items</CardTitle>
               <CardDescription>
-                Import multiple inventory items at once using a CSV file
+                Import multiple stock items at once using a CSV file
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

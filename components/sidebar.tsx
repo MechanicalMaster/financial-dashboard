@@ -31,13 +31,11 @@ interface NavItemType {
 
 const navigation: NavItemType[] = [
   { name: "Dashboard", href: "/", icon: Home },
-  { name: "Analytics", href: "/analytics", icon: BarChart2 },
   { name: "Purchases", href: "/purchases", icon: ShoppingCart },
-  { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Stock", href: "/inventory", icon: Package },
+  { name: "Old Stock", href: "/old-stock", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "Transactions", href: "/transactions", icon: Wallet },
   { name: "Invoices", href: "/invoices", icon: Receipt },
-  { name: "Chat", href: "/chat", icon: MessagesSquare },
 ]
 
 const bottomNavigation: NavItemType[] = [

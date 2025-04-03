@@ -22,7 +22,7 @@ import { InventoryItem } from "@/lib/db"
 import { MasterDropdown } from "@/components/masters/master-dropdown"
 import { SupplierDropdown } from "@/components/inventory/supplier-dropdown"
 
-export default function AddInventoryItemPage() {
+export default function AddStockItemPage() {
   const router = useRouter();
   const { add, db, getAll } = useDB();
   
@@ -141,7 +141,7 @@ export default function AddInventoryItemPage() {
     setIsSubmitting(true)
 
     try {
-      // Create new inventory item
+      // Create new stock item
       const newItem: InventoryItem = {
         name: itemName,
         category: itemCategory,
@@ -156,7 +156,7 @@ export default function AddInventoryItemPage() {
         updatedAt: new Date()
       }
 
-      console.log("Saving inventory item:", newItem)
+      console.log("Saving stock item:", newItem)
       
       // Generate ID explicitly
       const id = db.generateId('ITEM')
@@ -165,13 +165,13 @@ export default function AddInventoryItemPage() {
       // Add to database
       await add('inventory', newItem)
       
-      toast.success("Inventory item added successfully")
+      toast.success("Stock item added successfully")
       
-      // Redirect back to inventory page
+      // Redirect back to stock page
       router.push('/inventory')
     } catch (error) {
-      console.error("Error adding inventory item:", error)
-      toast.error(`Failed to add inventory item: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error("Error adding stock item:", error)
+      toast.error(`Failed to add stock item: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
