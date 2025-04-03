@@ -15,24 +15,29 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import React from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 export function TopNav() {
   const pathname = usePathname()
   const pathSegments = pathname.split("/").filter(Boolean)
   const { settings } = useSettings()
+  const { isAuthenticated } = useAuth()
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background">
+    <header className="sticky top-0 z-40 border-b border-amber-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="hidden md:block">
           <nav className="flex items-center space-x-2">
-            <Link href="/" className="text-sm font-medium">
+            <Link href={isAuthenticated ? "/dashboard" : "/"} className="text-sm font-medium text-amber-900 hover:text-amber-700">
               Home
             </Link>
             {pathSegments.map((segment, index) => (
               <React.Fragment key={segment}>
-                <span className="text-muted-foreground">/</span>
-                <Link href={`/${pathSegments.slice(0, index + 1).join("/")}`} className="text-sm font-medium">
+                <span className="text-amber-300">/</span>
+                <Link 
+                  href={`/${pathSegments.slice(0, index + 1).join("/")}`} 
+                  className="text-sm font-medium text-amber-900 hover:text-amber-700"
+                >
                   {segment.charAt(0).toUpperCase() + segment.slice(1)}
                 </Link>
               </React.Fragment>
@@ -44,10 +49,10 @@ export function TopNav() {
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-amber-50">
+                <Avatar className="h-8 w-8 ring-2 ring-amber-200">
                   <AvatarImage src={settings.avatar} alt={settings.fullName} />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-amber-100 text-amber-900">
                     {settings.fullName
                       .split(" ")
                       .map((n) => n[0])
@@ -56,21 +61,21 @@ export function TopNav() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuContent className="w-56 border-amber-100" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{settings.fullName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{settings.email}</p>
+                  <p className="text-sm font-medium leading-none text-amber-900">{settings.fullName}</p>
+                  <p className="text-xs leading-none text-amber-600">{settings.email}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-amber-100" />
               <DropdownMenuItem asChild>
-                <Link href="/settings">Profile</Link>
+                <Link href="/settings" className="text-amber-900 hover:text-amber-700 hover:bg-amber-50">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings">Settings</Link>
+                <Link href="/settings" className="text-amber-900 hover:text-amber-700 hover:bg-amber-50">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem className="text-amber-900 hover:text-amber-700 hover:bg-amber-50">Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

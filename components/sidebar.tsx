@@ -17,11 +17,13 @@ import {
   Package,
   Users,
   Database,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { useSettings } from "@/contexts/settings-context"
+import { useAuth } from "@/contexts/auth-context"
 
 interface NavItemType {
   name: string;
@@ -30,7 +32,7 @@ interface NavItemType {
 }
 
 const navigation: NavItemType[] = [
-  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Purchases", href: "/purchases", icon: ShoppingCart },
   { name: "Stock", href: "/inventory", icon: Package },
   { name: "Old Stock", href: "/old-stock", icon: Package },
@@ -49,6 +51,7 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { settings } = useSettings()
+  const { logout } = useAuth()
 
   const NavItem = ({ item, isBottom = false }: { item: NavItemType; isBottom?: boolean }) => (
     <Tooltip delayDuration={0}>
@@ -58,8 +61,8 @@ export function Sidebar() {
           className={cn(
             "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
             pathname === item.href
-              ? "bg-secondary text-secondary-foreground"
-              : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground",
+              ? "bg-amber-50 text-amber-900 border border-amber-200"
+              : "text-amber-700 hover:bg-amber-50 hover:text-amber-900 hover:border hover:border-amber-100",
             isCollapsed && "justify-center px-2",
           )}
         >
@@ -92,11 +95,11 @@ export function Sidebar() {
             isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           )}
         >
-          <div className="border-b border-border">
+          <div className="border-b border-amber-100">
             <div className={cn("flex h-16 items-center gap-2 px-4", isCollapsed && "justify-center px-2")}>
               {!isCollapsed && (
                 <Link href="/" className="flex items-center font-semibold">
-                  <span className="text-lg">{settings?.firmDetails?.firmName || "Flowers&Saints"}</span>
+                  <span className="text-lg bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">{settings?.firmDetails?.firmName || "Kuber"}</span>
                 </Link>
               )}
               <Button
@@ -117,12 +120,22 @@ export function Sidebar() {
               ))}
             </nav>
           </div>
-          <div className="border-t border-border p-2">
+          <div className="border-t border-amber-100 p-2">
             <nav className="space-y-1">
               {bottomNavigation.map((item) => (
                 <NavItem key={item.name} item={item} isBottom />
               ))}
             </nav>
+          </div>
+          <div className="border-t border-amber-100 p-2">
+            <Button
+              variant="ghost"
+              className="w-full -mx-2 text-amber-700 hover:text-amber-900 hover:bg-amber-50 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+              onClick={logout}
+            >
+              <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
+              Logout
+            </Button>
           </div>
         </div>
       </>

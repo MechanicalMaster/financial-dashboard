@@ -47,7 +47,7 @@
     "dexie": "^4.0.11",
     "embla-carousel-react": "8.5.1",
     "firebase": "^11.5.0",
-    "framer-motion": "^12.5.0",
+    "framer-motion": "^12.6.3",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
