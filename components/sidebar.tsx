@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -18,6 +18,7 @@ import {
   Users,
   Database,
   LogOut,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,23 @@ export function Sidebar() {
   const { settings } = useSettings()
   const { logout } = useAuth()
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileOpen])
+
   const NavItem = ({ item, isBottom = false }: { item: NavItemType; isBottom?: boolean }) => (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
@@ -82,17 +100,24 @@ export function Sidebar() {
     <TooltipProvider>
       <>
         <button
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background rounded-md shadow-md"
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background rounded-md shadow-md hover:bg-amber-50 transition-colors"
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           aria-label="Toggle sidebar"
         >
-          <Menu className="h-6 w-6" />
+          {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
+        {isMobileOpen && (
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+            onClick={() => setIsMobileOpen(false)}
+          />
+        )}
         <div
           className={cn(
-            "fixed inset-y-0 z-20 flex flex-col bg-background transition-all duration-300 ease-in-out lg:static",
+            "fixed inset-y-0 z-40 flex flex-col bg-background transition-all duration-300 ease-in-out lg:static",
             isCollapsed ? "w-[72px]" : "w-72",
             isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+            "shadow-lg lg:shadow-none"
           )}
         >
           <div className="border-b border-amber-100">
@@ -134,7 +159,7 @@ export function Sidebar() {
               onClick={logout}
             >
               <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
-              Logout
+              {!isCollapsed && "Logout"}
             </Button>
           </div>
         </div>

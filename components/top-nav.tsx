@@ -44,9 +44,13 @@ export function TopNav() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <Notifications />
-          <ThemeToggle />
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="hidden sm:block">
+            <Notifications />
+          </div>
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-amber-50">
