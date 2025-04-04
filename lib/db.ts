@@ -79,16 +79,28 @@ export interface Settings {
     firmName: string;
     firmLogo: string;
     address: string;
-    [key: string]: any;
+    phoneNumber: string;
+    gstInNumber: string;
+    dateOfEstablishment: string;
+    constitution: string;
+    authToken: string;
   };
   notifications: {
     email: boolean;
     push: boolean;
-    [key: string]: any;
+    sms: boolean;
+    accountActivity: boolean;
+    newFeatures: boolean;
+    marketing: boolean;
+    frequency: string;
+    quietHoursStart: string;
+    quietHoursEnd: string;
   };
   privacy: {
     analyticsSharing: boolean;
-    [key: string]: any;
+    personalizedAds: boolean;
+    visibility: string;
+    dataRetention: string;
   };
   updatedAt: Date;
 }
@@ -222,6 +234,10 @@ export class InventoryDB extends Dexie {
     try {
       const customerCount = await this.customers.count();
       const inventoryCount = await this.inventory.count();
+      const settingsCount = await this.settings.count();
+      
+      // Check if settings need to be reset (wrong firm name)
+      await this.resetSettingsIfNeeded();
       
       if (customerCount === 0) {
         // Seed customers
@@ -285,10 +301,84 @@ export class InventoryDB extends Dexie {
         console.log('Initial inventory data seeded');
       }
       
+      if (settingsCount === 0) {
+        // Seed settings
+        const defaultSettings: Settings = {
+          id: 'default-user-id',
+          avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+          fullName: "Dollar Singh",
+          email: "dollar.singh@example.com",
+          phone: "+1 (555) 123-4567",
+          timezone: "utc-8",
+          language: "en",
+          currency: "usd",
+          dateFormat: "MM/DD/YYYY",
+          fontSize: 16,
+          theme: "system",
+          layout: "default",
+          firmDetails: {
+            firmName: "Kuber",
+            firmLogo: "/logo.png",
+            address: "123 Business Park, Mumbai, India",
+            phoneNumber: "+91 98765 43210",
+            gstInNumber: "27AADCB2230M1ZT",
+            dateOfEstablishment: "2010-01-15",
+            constitution: "Proprietorship",
+            authToken: "abc123xyz456"
+          },
+          notifications: {
+            email: true,
+            push: true,
+            sms: false,
+            accountActivity: true,
+            newFeatures: true,
+            marketing: false,
+            frequency: "daily",
+            quietHoursStart: "22:00",
+            quietHoursEnd: "08:00"
+          },
+          privacy: {
+            analyticsSharing: true,
+            personalizedAds: false,
+            visibility: "public",
+            dataRetention: "1-year"
+          },
+          updatedAt: new Date()
+        };
+        
+        await this.settings.add(defaultSettings);
+        console.log('Initial settings data seeded');
+      }
+      
       console.log('Database initialization completed');
     } catch (error) {
       console.error('Error seeding initial data:', error);
       throw error;
+    }
+  }
+  
+  // Helper to reset settings if they have the wrong firm name
+  async resetSettingsIfNeeded() {
+    try {
+      const existingSettings = await this.settings.get('default-user-id');
+      
+      // If settings exist but have the wrong firm name, reset them
+      if (existingSettings && existingSettings.firmDetails.firmName !== "Kuber") {
+        console.log(`Resetting settings: Found "${existingSettings.firmDetails.firmName}" instead of "Kuber"`);
+        
+        // Update the firm name
+        await this.settings.update('default-user-id', {
+          firmDetails: {
+            ...existingSettings.firmDetails,
+            firmName: "Kuber"
+          },
+          updatedAt: new Date()
+        });
+        
+        console.log('Settings reset completed: Firm name updated to "Kuber"');
+      }
+    } catch (error) {
+      console.error('Error resetting settings:', error);
     }
   }
   
