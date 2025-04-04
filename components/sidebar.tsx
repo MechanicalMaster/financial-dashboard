@@ -44,7 +44,6 @@ const navigation: NavItemType[] = [
 const bottomNavigation: NavItemType[] = [
   { name: "Masters", href: "/masters", icon: Database },
   { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Help", href: "/help", icon: HelpCircle },
 ]
 
 export function Sidebar() {
@@ -150,17 +149,27 @@ export function Sidebar() {
               {bottomNavigation.map((item) => (
                 <NavItem key={item.name} item={item} isBottom />
               ))}
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={logout}
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors w-full",
+                      "text-amber-700 hover:bg-amber-50 hover:text-amber-900 hover:border hover:border-amber-100",
+                      isCollapsed && "justify-center px-2",
+                    )}
+                  >
+                    <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-3")} />
+                    {!isCollapsed && <span>Logout</span>}
+                  </button>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right" className="flex items-center gap-4">
+                    Logout
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </nav>
-          </div>
-          <div className="border-t border-amber-100 p-2">
-            <Button
-              variant="ghost"
-              className="w-full -mx-2 text-amber-700 hover:text-amber-900 hover:bg-amber-50 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-              onClick={logout}
-            >
-              <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
-              {!isCollapsed && "Logout"}
-            </Button>
           </div>
         </div>
       </>
