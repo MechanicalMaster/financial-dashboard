@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { useDB } from "@/contexts/db-context"
 import { MasterDropdown } from "@/components/masters/master-dropdown"
 import { Textarea } from "@/components/ui/textarea"
-import { Upload, Image as ImageIcon } from "lucide-react"
+import { Upload, Image as ImageIcon, Camera } from "lucide-react"
 
 interface OldStockFormData {
   name: string;
@@ -32,6 +32,7 @@ export default function AddOldStockPage() {
   const { add } = useDB()
   const [loading, setLoading] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const [formData, setFormData] = useState<OldStockFormData>({
     name: "",
     category: "",
@@ -45,6 +46,18 @@ export default function AddOldStockPage() {
     purity: "",
     description: "",
   })
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -255,6 +268,7 @@ export default function AddOldStockPage() {
                   type="file"
                   id="photo"
                   accept="image/*"
+                  capture={isMobile ? "environment" : undefined}
                   className="hidden"
                   onChange={handlePhotoChange}
                   required
@@ -274,8 +288,17 @@ export default function AddOldStockPage() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center">
-                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                      <p className="text-sm text-gray-500">Click to upload photo</p>
+                      {isMobile ? (
+                        <>
+                          <Camera className="w-8 h-8 mb-2 text-amber-600" />
+                          <p className="text-sm text-gray-700">Tap to take a photo</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                          <p className="text-sm text-gray-500">Click to upload photo</p>
+                        </>
+                      )}
                       <p className="text-xs text-gray-400">(Max size: 5MB)</p>
                     </div>
                   )}

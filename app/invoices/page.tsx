@@ -7,13 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Download, Filter, Plus, Search, Calendar } from "lucide-react"
-import { CreateInvoiceModal } from "@/components/invoices/create-invoice-modal"
-import { CreateBookingInvoiceModal } from "@/components/invoices/create-booking-invoice-modal"
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge"
 import { Pagination } from "@/components/invoices/pagination"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { type InvoiceStatus } from "@/components/invoices/invoice-status-badge"
 import { BookingLedger, type BookingLine, type BookingPayment } from "@/components/invoices/booking-ledger"
+import Link from "next/link"
 
 // Define invoice type
 interface Invoice {
@@ -288,114 +287,98 @@ const bookingLines: BookingLine[] = [
 const bookingPayments: BookingPayment[] = bookingLines.flatMap(line => line.payments)
 
 export default function InvoicesPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isCreateBookingModalOpen, setIsCreateBookingModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [activeTab, setActiveTab] = useState("invoices")
-  const itemsPerPage = 8
+  const itemsPerPage = 10
 
-  // Filter invoices based on search query and status filter
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
       invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.client.toLowerCase().includes(searchQuery.toLowerCase())
-
-    const matchesStatus = statusFilter === "all" || invoice.status === statusFilter
-
+    const matchesStatus = selectedStatus === "all" || invoice.status === selectedStatus
     return matchesSearch && matchesStatus
   })
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage)
-
-  const handleCreateInvoice = (invoiceData: any) => {
-    console.log("New invoice created:", invoiceData)
-    setIsCreateModalOpen(false)
-    // In a real application, you would add the new invoice to your data store
-  }
-
-  const handleCreateBookingInvoice = (invoiceData: any) => {
-    console.log("New booking invoice created:", invoiceData)
-    setIsCreateBookingModalOpen(false)
-    // In a real application, you would add the new booking invoice to your data store
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-        <div className="flex space-x-2">
-          <Button onClick={() => setIsCreateBookingModalOpen(true)} variant="outline">
-            <Calendar className="mr-2 h-4 w-4" /> Create Booking Invoice
-          </Button>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-          </Button>
-        </div>
-      </div>
-
-      <Tabs defaultValue="invoices" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="booking-ledger">Booking Ledger</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="invoices">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search invoices..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                  <SelectItem value="booking">Booking</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <DateRangePicker className="w-full sm:w-auto" />
-              <Button variant="outline" className="w-full sm:w-auto">
-                <Filter className="mr-2 h-4 w-4" /> More Filters
+    <div className="container py-6">
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-amber-900">Invoices</h1>
+          <div className="flex items-center gap-4">
+            <Link href="/invoices/create-booking">
+              <Button variant="outline" className="hover:bg-amber-50">
+                <Calendar className="mr-2 h-4 w-4" /> Create Booking Invoice
               </Button>
-            </div>
+            </Link>
+            <Link href="/invoices/create">
+              <Button className="bg-amber-600 hover:bg-amber-700">
+                <Plus className="mr-2 h-4 w-4" /> Create Invoice
+              </Button>
+            </Link>
           </div>
+        </div>
 
-          <div className="rounded-md border mt-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedInvoices.length > 0 ? (
-                  paginatedInvoices.map((invoice) => (
+        <Tabs defaultValue="invoices" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="invoices">Regular Invoices</TabsTrigger>
+            <TabsTrigger value="bookings">Booking Ledger</TabsTrigger>
+          </TabsList>
+          <TabsContent value="invoices" className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-1 items-center gap-4">
+                <div className="relative flex-1 md:max-w-sm">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="search"
+                    placeholder="Search invoices..."
+                    className="pl-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="md:w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-4">
+                <DateRangePicker />
+                <Button variant="outline" size="icon">
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-amber-200">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.id}</TableCell>
+                      <TableCell>{invoice.id}</TableCell>
                       <TableCell>{invoice.date}</TableCell>
                       <TableCell>{invoice.dueDate}</TableCell>
                       <TableCell>{invoice.client}</TableCell>
@@ -409,42 +392,25 @@ export default function InvoicesPage() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No invoices found. Try adjusting your filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {paginatedInvoices.length} of {filteredInvoices.length} invoices
-            </p>
-            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="booking-ledger">
-          <BookingLedger bookingLines={bookingLines} bookingPayments={bookingPayments} />
-        </TabsContent>
-      </Tabs>
-
-      <CreateInvoiceModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreateInvoice={handleCreateInvoice}
-      />
-
-      <CreateBookingInvoiceModal
-        isOpen={isCreateBookingModalOpen}
-        onClose={() => setIsCreateBookingModalOpen(false)}
-        onCreateBookingInvoice={handleCreateBookingInvoice}
-      />
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
+          </TabsContent>
+          <TabsContent value="bookings">
+            <BookingLedger 
+              bookingLines={bookingLines} 
+              bookingPayments={[]} 
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }
