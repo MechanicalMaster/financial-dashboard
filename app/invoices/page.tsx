@@ -308,12 +308,12 @@ export default function InvoicesPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-amber-900">Invoices</h1>
           <div className="flex items-center gap-4">
-            <Link href="/invoices/create-booking">
+            <Link href={`${process.env.NODE_ENV === 'production' ? '/financial-dashboard' : ''}/invoices/create-booking`}>
               <Button variant="outline" className="hover:bg-amber-50">
                 <Calendar className="mr-2 h-4 w-4" /> Create Booking Invoice
               </Button>
             </Link>
-            <Link href="/invoices/create">
+            <Link href={`${process.env.NODE_ENV === 'production' ? '/financial-dashboard' : ''}/invoices/create`}>
               <Button className="bg-amber-600 hover:bg-amber-700">
                 <Plus className="mr-2 h-4 w-4" /> Create Invoice
               </Button>
