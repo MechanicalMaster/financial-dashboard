@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, Plus, Trash2, ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
+import { getPath } from "@/lib/utils/path-utils"
 
 interface InvoiceItem {
   id: string
@@ -148,8 +149,8 @@ export default function CreateInvoicePage() {
     // Here you would typically save the invoice data
     console.log("Creating invoice:", invoiceData)
     
-    // Navigate back to invoices list
-    router.push("/invoices")
+    // Navigate back to invoices list using the path utility
+    router.push(getPath("/invoices"))
   }
 
   return (
@@ -159,7 +160,7 @@ export default function CreateInvoicePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push("/invoices")}
+            onClick={() => router.push(getPath("/invoices"))}
             className="hover:bg-amber-50"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -363,7 +364,7 @@ export default function CreateInvoicePage() {
         </div>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.push("/invoices")}>
+          <Button type="button" variant="outline" onClick={() => router.push(getPath("/invoices"))}>
             Cancel
           </Button>
           <Button type="submit" className="bg-amber-600 hover:bg-amber-700">

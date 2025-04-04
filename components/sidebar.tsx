@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { useSettings } from "@/contexts/settings-context"
 import { useAuth } from "@/contexts/auth-context"
+import { getPath } from "@/lib/utils/path-utils"
 
 interface NavItemType {
   name: string;
@@ -74,7 +75,7 @@ export function Sidebar() {
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
         <Link
-          href={item.href}
+          href={getPath(item.href)}
           className={cn(
             "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
             pathname === item.href
@@ -122,7 +123,7 @@ export function Sidebar() {
           <div className="border-b border-amber-100">
             <div className={cn("flex h-16 items-center gap-2 px-4", isCollapsed && "justify-center px-2")}>
               {!isCollapsed && (
-                <Link href="/" className="flex items-center font-semibold">
+                <Link href={getPath("/")} className="flex items-center font-semibold">
                   <span className="text-lg bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">{settings?.firmDetails?.firmName || "Kuber"}</span>
                 </Link>
               )}

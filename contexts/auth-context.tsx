@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { getPath } from "@/lib/utils/path-utils"
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -32,12 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // If on a private route and not authenticated, redirect to login
     if (!authStatus && !publicRoutes.includes(pathname)) {
-      router.push("/login")
+      router.push(getPath("/login"))
     }
 
     // If authenticated and on login page, redirect to dashboard
     if (authStatus && pathname === "/login") {
-      router.push("/dashboard")
+      router.push(getPath("/dashboard"))
     }
   }, [pathname, router])
 
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (phone === "8454881721" && password === "pwd") {
       localStorage.setItem("isAuthenticated", "true")
       setIsAuthenticated(true)
-      router.push("/dashboard")
+      router.push(getPath("/dashboard"))
     } else {
       throw new Error("Invalid credentials")
     }
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem("isAuthenticated")
     setIsAuthenticated(false)
-    router.push("/")
+    router.push(getPath("/"))
   }
 
   if (isLoading) {

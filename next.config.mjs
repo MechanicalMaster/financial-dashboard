@@ -5,6 +5,9 @@ try {
   // ignore error
 }
 
+// Check if we're in production environment (Vercel)
+const isProd = process.env.NODE_ENV === 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -21,6 +24,10 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Add basePath only in production environment
+  ...(isProd && {
+    basePath: '/financial-dashboard',
+  }),
 }
 
 mergeConfig(nextConfig, userConfig)

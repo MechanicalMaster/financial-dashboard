@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { useSettings } from "@/contexts/settings-context"
+import { getPath } from "@/lib/utils/path-utils"
 
 // Define the navigation tile data with icons and routes
 const navigationTiles = [
@@ -39,14 +40,14 @@ export default function HomePage() {
   const { settings } = useSettings()
 
   const handleLogin = () => {
-    router.push("/login")
+    router.push(getPath("/login"))
   }
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
-      router.push("/dashboard")
+      router.push(getPath("/dashboard"))
     } else {
-      router.push("/login")
+      router.push(getPath("/login"))
     }
   }
 
@@ -84,16 +85,6 @@ export default function HomePage() {
   ]
 
   const parallaxY = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login")
-    }
-  }, [isAuthenticated, router])
-
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-amber-50 to-white overflow-hidden">
@@ -143,13 +134,23 @@ export default function HomePage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                onClick={logout}
-                variant="ghost"
-                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-              >
-                {t("logout")}
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  onClick={logout}
+                  variant="ghost"
+                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                >
+                  {t("logout")}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleLogin}
+                  variant="ghost"
+                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                >
+                  {t("login")}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -328,34 +329,36 @@ export default function HomePage() {
         </div>
       </motion.footer>
 
-      <div className="container mx-auto px-4 py-8 mt-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent mb-2">
-            {settings?.firmDetails?.firmName || "Kuber"}
-          </h1>
-          <p className="text-amber-700">Welcome to your business dashboard</p>
-        </div>
+      {isAuthenticated && (
+        <div className="container mx-auto px-4 py-8 mt-8">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent mb-2">
+              {settings?.firmDetails?.firmName || "Kuber"}
+            </h1>
+            <p className="text-amber-700">Welcome to your business dashboard</p>
+          </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {navigationTiles.map((tile) => (
-            <Link 
-              key={tile.name} 
-              href={tile.href}
-              className="group"
-            >
-              <div className="h-full flex flex-col bg-white border border-amber-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200">
-                <div className="flex-1 p-4 md:p-6 flex flex-col items-center text-center">
-                  <div className="p-3 rounded-full bg-amber-50 text-amber-600 mb-3 group-hover:bg-amber-100 transition-colors">
-                    <tile.icon className="h-7 w-7" />
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {navigationTiles.map((tile) => (
+              <Link 
+                key={tile.name} 
+                href={getPath(tile.href)}
+                className="group"
+              >
+                <div className="h-full flex flex-col bg-white border border-amber-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200">
+                  <div className="flex-1 p-4 md:p-6 flex flex-col items-center text-center">
+                    <div className="p-3 rounded-full bg-amber-50 text-amber-600 mb-3 group-hover:bg-amber-100 transition-colors">
+                      <tile.icon className="h-7 w-7" />
+                    </div>
+                    <h3 className="font-semibold text-amber-900 mb-1">{tile.name}</h3>
+                    <p className="text-xs text-amber-600 hidden md:block">{tile.description}</p>
                   </div>
-                  <h3 className="font-semibold text-amber-900 mb-1">{tile.name}</h3>
-                  <p className="text-xs text-amber-600 hidden md:block">{tile.description}</p>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

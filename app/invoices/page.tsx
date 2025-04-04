@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Filter, Plus, Search, Calendar } from "lucide-react"
+import { Download, Filter, Plus, Search, Calendar, MoreHorizontal } from "lucide-react"
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge"
 import { Pagination } from "@/components/invoices/pagination"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { type InvoiceStatus } from "@/components/invoices/invoice-status-badge"
 import { BookingLedger, type BookingLine, type BookingPayment } from "@/components/invoices/booking-ledger"
 import Link from "next/link"
+import { getPath } from "@/lib/utils/path-utils"
 
 // Define invoice type
 interface Invoice {
@@ -308,12 +309,12 @@ export default function InvoicesPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-amber-900">Invoices</h1>
           <div className="flex items-center gap-4">
-            <Link href={`${process.env.NODE_ENV === 'production' ? '/financial-dashboard' : ''}/invoices/create-booking`}>
+            <Link href={getPath("/invoices/create-booking")}>
               <Button variant="outline" className="hover:bg-amber-50">
                 <Calendar className="mr-2 h-4 w-4" /> Create Booking Invoice
               </Button>
             </Link>
-            <Link href={`${process.env.NODE_ENV === 'production' ? '/financial-dashboard' : ''}/invoices/create`}>
+            <Link href={getPath("/invoices/create")}>
               <Button className="bg-amber-600 hover:bg-amber-700">
                 <Plus className="mr-2 h-4 w-4" /> Create Invoice
               </Button>

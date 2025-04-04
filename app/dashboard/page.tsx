@@ -17,6 +17,7 @@ import {
   BarChart,
   IndianRupee
 } from "lucide-react"
+import { getPath } from "@/lib/utils/path-utils"
 
 // Define the navigation tile data with icons and routes
 const navigationTiles = [
@@ -51,7 +52,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login")
+      router.push(getPath("/login"))
     }
   }, [isAuthenticated, router])
 
@@ -92,7 +93,7 @@ export default function DashboardPage() {
         {navigationTiles.map((tile) => (
           <Link 
             key={tile.name} 
-            href={tile.href}
+            href={getPath(tile.href)}
             className="group"
           >
             <div className="h-full flex flex-col bg-white border border-amber-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200">
