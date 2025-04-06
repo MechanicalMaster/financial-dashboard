@@ -27,6 +27,97 @@ const navigationTiles = [
   { name: "Invoices", href: "/invoices", icon: Receipt, description: "Create and manage invoices" },
 ]
 
+// Define SVG motifs for jewelry-themed decorative elements
+const jewelryMotifs = {
+  mandala: (
+    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-5">
+      <path d="M100 10C100 4.48 104.48 0 110 0C115.52 0 120 4.48 120 10V25C120 30.52 115.52 35 110 35C104.48 35 100 30.52 100 25V10Z" fill="currentColor"/>
+      <path d="M145.96 16.18C143.57 11.27 145.7 5.35 150.61 2.96C155.52 0.57 161.43 2.7 163.82 7.61L171.89 23.97C174.28 28.88 172.15 34.8 167.24 37.19C162.33 39.58 156.41 37.45 154.02 32.54L145.96 16.18Z" fill="currentColor"/>
+      <path d="M182.09 45.98C177.91 42.58 177.28 36.28 180.68 32.09C184.08 27.91 190.38 27.28 194.57 30.68L206.16 40.07C210.34 43.47 210.97 49.77 207.57 53.95C204.18 58.14 197.88 58.77 193.69 55.37L182.09 45.98Z" fill="currentColor"/>
+      <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="2" strokeDasharray="8 4"/>
+      <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="100" cy="100" r="30" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M85 100C85 91.72 91.72 85 100 85C108.28 85 115 91.72 115 100C115 108.28 108.28 115 100 115C91.72 115 85 108.28 85 100Z" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  ),
+  
+  paisley: (
+    <svg width="120" height="160" viewBox="0 0 120 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-5">
+      <path d="M60 10C85 10 100 35 100 60C100 85 85 110 60 130C35 110 20 85 20 60C20 35 35 10 60 10Z" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M60 30C75 30 85 45 85 60C85 75 75 90 60 100C45 90 35 75 35 60C35 45 45 30 60 30Z" stroke="currentColor" strokeWidth="1"/>
+      <path d="M60 50C65 50 70 55 70 60C70 65 65 70 60 75C55 70 50 65 50 60C50 55 55 50 60 50Z" fill="currentColor" fillOpacity="0.2"/>
+      <path d="M60 130C60 130 85 145 85 155C85 158 82 160 78 160H42C38 160 35 158 35 155C35 145 60 130 60 130Z" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  ),
+  
+  jewelryBorder: (
+    <svg width="100" height="30" viewBox="0 0 100 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-5">
+      <circle cx="10" cy="15" r="4" fill="currentColor"/>
+      <circle cx="30" cy="15" r="4" fill="currentColor"/>
+      <circle cx="50" cy="15" r="4" fill="currentColor"/>
+      <circle cx="70" cy="15" r="4" fill="currentColor"/>
+      <circle cx="90" cy="15" r="4" fill="currentColor"/>
+      <path d="M14 15H26" stroke="currentColor" strokeWidth="1"/>
+      <path d="M34 15H46" stroke="currentColor" strokeWidth="1"/>
+      <path d="M54 15H66" stroke="currentColor" strokeWidth="1"/>
+      <path d="M74 15H86" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  ),
+  
+  diamond: (
+    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-5">
+      <path d="M30 5L55 30L30 55L5 30L30 5Z" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M30 15L45 30L30 45L15 30L30 15Z" stroke="currentColor" strokeWidth="1"/>
+      <path d="M30 25L35 30L30 35L25 30L30 25Z" fill="currentColor" fillOpacity="0.2"/>
+    </svg>
+  ),
+  
+  jhumka: (
+    <svg width="80" height="100" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-5">
+      <circle cx="40" cy="20" r="10" stroke="currentColor" strokeWidth="1.5"/>
+      <circle cx="40" cy="20" r="15" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2"/>
+      <path d="M40 30C50 30 60 40 60 50C60 70 40 80 40 80C40 80 20 70 20 50C20 40 30 30 40 30Z" stroke="currentColor" strokeWidth="1.5"/>
+      <circle cx="40" cy="90" r="5" stroke="currentColor" strokeWidth="1"/>
+      <path d="M40 80L40 85" stroke="currentColor" strokeWidth="1"/>
+      <path d="M30 40C30 40 40 45 50 40" stroke="currentColor" strokeWidth="1"/>
+      <path d="M25 50C25 50 40 60 55 50" stroke="currentColor" strokeWidth="1"/>
+      <path d="M30 60C30 60 40 65 50 60" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  ),
+  
+  headerDecoration: (
+    <svg width="800" height="60" viewBox="0 0 800 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-10">
+      <path d="M400 5L420 25L400 45L380 25L400 5Z" fill="currentColor"/>
+      <circle cx="400" cy="25" r="8" fill="white"/>
+      <circle cx="400" cy="25" r="5" fill="currentColor"/>
+      
+      <path d="M340 15L355 30L340 45L325 30L340 15Z" stroke="currentColor" strokeWidth="1"/>
+      <path d="M460 15L475 30L460 45L445 30L460 15Z" stroke="currentColor" strokeWidth="1"/>
+      
+      <path d="M280 20L290 30L280 40L270 30L280 20Z" stroke="currentColor" strokeWidth="1"/>
+      <path d="M520 20L530 30L520 40L510 30L520 20Z" stroke="currentColor" strokeWidth="1"/>
+      
+      <circle cx="220" cy="30" r="10" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2"/>
+      <circle cx="580" cy="30" r="10" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2"/>
+      
+      <line x1="150" y1="30" x2="200" y2="30" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4"/>
+      <line x1="600" y1="30" x2="650" y2="30" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4"/>
+      
+      <circle cx="120" cy="30" r="5" fill="currentColor" fillOpacity="0.3"/>
+      <circle cx="680" cy="30" r="5" fill="currentColor" fillOpacity="0.3"/>
+      
+      <circle cx="90" cy="30" r="3" fill="currentColor" fillOpacity="0.3"/>
+      <circle cx="710" cy="30" r="3" fill="currentColor" fillOpacity="0.3"/>
+      
+      <circle cx="70" cy="30" r="2" fill="currentColor" fillOpacity="0.3"/>
+      <circle cx="730" cy="30" r="2" fill="currentColor" fillOpacity="0.3"/>
+      
+      <circle cx="55" cy="30" r="1" fill="currentColor" fillOpacity="0.3"/>
+      <circle cx="745" cy="30" r="1" fill="currentColor" fillOpacity="0.3"/>
+    </svg>
+  )
+}
+
 export default function HomePage() {
   const { isAuthenticated, logout } = useAuth()
   const { t, language, setLanguage } = useLanguage()
@@ -87,9 +178,154 @@ export default function HomePage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white relative overflow-hidden">
+        {/* Decorative Background Motifs with shimmer animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none text-amber-700">
+          {/* Top Left Mandala */}
+          <motion.div 
+            className="absolute -top-20 -left-20 transform rotate-12"
+            animate={{ 
+              opacity: [0.2, 0.3, 0.2],
+              scale: [1, 1.02, 1]
+            }}
+            transition={{ 
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.mandala}
+          </motion.div>
+          
+          {/* Bottom Right Mandala */}
+          <motion.div 
+            className="absolute -bottom-40 -right-20 transform rotate-45"
+            animate={{ 
+              opacity: [0.15, 0.25, 0.15],
+              scale: [1, 1.05, 1]
+            }}
+            transition={{ 
+              duration: 7,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.mandala}
+          </motion.div>
+          
+          {/* Middle Right Paisley */}
+          <motion.div 
+            className="absolute top-1/4 -right-10 transform rotate-12"
+            animate={{ 
+              opacity: [0.2, 0.3, 0.2],
+              y: [0, 5, 0]
+            }}
+            transition={{ 
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.paisley}
+          </motion.div>
+          
+          {/* Bottom Left Paisley */}
+          <motion.div 
+            className="absolute bottom-10 left-10 transform -rotate-20"
+            animate={{ 
+              opacity: [0.15, 0.25, 0.15],
+              y: [0, -5, 0]
+            }}
+            transition={{ 
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.paisley}
+          </motion.div>
+          
+          {/* Traditional Jhumka earring motifs */}
+          <motion.div 
+            className="absolute top-40 left-10 transform rotate-15"
+            animate={{ 
+              y: [0, 3, 0],
+              opacity: [0.2, 0.3, 0.2]
+            }}
+            transition={{ 
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.jhumka}
+          </motion.div>
+          
+          <motion.div 
+            className="absolute bottom-20 right-20 transform -rotate-10"
+            animate={{ 
+              y: [0, 3, 0],
+              opacity: [0.15, 0.25, 0.15]
+            }}
+            transition={{ 
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.jhumka}
+          </motion.div>
+          
+          {/* Scattered Diamonds */}
+          <motion.div 
+            className="absolute top-1/3 left-1/4 transform -translate-x-1/2 -rotate-12"
+            animate={{ 
+              opacity: [0.3, 0.5, 0.3],
+              rotate: ["-12deg", "-10deg", "-12deg"]
+            }}
+            transition={{ 
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.diamond}
+          </motion.div>
+          
+          <motion.div 
+            className="absolute top-2/3 right-1/4 transform translate-x-1/2 rotate-25"
+            animate={{ 
+              opacity: [0.2, 0.4, 0.2],
+              rotate: ["25deg", "28deg", "25deg"]
+            }}
+            transition={{ 
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.diamond}
+          </motion.div>
+          
+          <motion.div 
+            className="absolute top-1/2 left-16 transform rotate-45"
+            animate={{ 
+              opacity: [0.25, 0.45, 0.25],
+              rotate: ["45deg", "47deg", "45deg"]
+            }}
+            transition={{ 
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.diamond}
+          </motion.div>
+        </div>
+
+        {/* Content Container with frosted glass effect */}
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="flex justify-between items-center mb-2">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
               {settings?.firmDetails?.firmName || "Kuber"}
             </h1>
@@ -101,7 +337,23 @@ export default function HomePage() {
               {t("logout")}
             </Button>
           </div>
+          
+          {/* Decorative Header Line with shimmer */}
+          <motion.div 
+            className="w-full flex justify-center mb-8 text-amber-700 overflow-hidden"
+            animate={{ 
+              opacity: [0.6, 0.9, 0.6] 
+            }}
+            transition={{ 
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {jewelryMotifs.headerDecoration}
+          </motion.div>
 
+          {/* Navigation Cards with enhanced hover effects */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             {navigationTiles.map((tile) => (
               <Link 
@@ -109,15 +361,28 @@ export default function HomePage() {
                 href={getPath(tile.href)}
                 className="group"
               >
-                <div className="h-full flex flex-col bg-white border border-amber-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200">
+                <motion.div 
+                  className="h-full flex flex-col bg-white/90 backdrop-blur-sm border border-amber-100 rounded-lg overflow-hidden shadow-sm transition-all duration-200"
+                  whileHover={{ 
+                    scale: 1.02,
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    borderColor: "rgba(217, 119, 6, 0.5)"
+                  }}
+                >
                   <div className="flex-1 p-4 md:p-6 flex flex-col items-center text-center">
-                    <div className="p-3 rounded-full bg-amber-50 text-amber-600 mb-3 group-hover:bg-amber-100 transition-colors">
+                    <motion.div 
+                      className="p-3 rounded-full bg-amber-50 text-amber-600 mb-3 group-hover:bg-amber-100 transition-colors"
+                      whileHover={{ 
+                        scale: 1.1,
+                        backgroundColor: "rgba(251, 191, 36, 0.2)"
+                      }}
+                    >
                       <tile.icon className="h-7 w-7" />
-                    </div>
+                    </motion.div>
                     <h3 className="font-semibold text-amber-900 mb-1">{tile.name}</h3>
                     <p className="text-xs text-amber-600 hidden md:block">{tile.description}</p>
                   </div>
-                </div>
+                </motion.div>
               </Link>
             ))}
           </div>
