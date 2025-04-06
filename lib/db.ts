@@ -619,15 +619,9 @@ export class InventoryDB extends Dexie {
       const purchaseCount = await this.purchases.count();
       
       if (purchaseCount > 0) {
-        // Get all purchase IDs
-        const allPurchases = await this.purchases.toArray();
-        const purchaseIds = allPurchases.map(purchase => purchase.id).filter(Boolean) as string[];
-        
-        // Delete them all
-        if (purchaseIds.length > 0) {
-          await this.purchases.bulkDelete(purchaseIds);
-          console.log(`Removed ${purchaseIds.length} purchases from database`);
-        }
+        // Delete all purchases directly
+        await this.purchases.clear();
+        console.log(`Removed ${purchaseCount} purchases from database`);
       }
 
       // 2. Clean up purchase invoices from localStorage
@@ -646,6 +640,10 @@ export class InventoryDB extends Dexie {
           localStorage.removeItem('suppliers');
           console.log('Removed suppliers data from localStorage');
         }
+        
+        // Clear any other potential purchase-related localStorage items
+        localStorage.removeItem('purchaseSuppliers');
+        localStorage.removeItem('recentPurchases');
       }
       
       return true;

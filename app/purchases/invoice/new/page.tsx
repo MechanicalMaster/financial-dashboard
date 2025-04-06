@@ -11,9 +11,12 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DatePicker } from "@/components/ui/date-picker"
+import { useDB } from "@/contexts/db-context"
+import { Purchase } from "@/lib/db"
 
 export default function NewPurchaseInvoicePage() {
   const router = useRouter()
+  const { db, getMastersByType } = useDB()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -26,7 +29,7 @@ export default function NewPurchaseInvoicePage() {
   const [paymentStatus, setPaymentStatus] = useState("paid")
   const [items, setItems] = useState("")
   const [notes, setNotes] = useState("")
-  const [suppliers, setSuppliers] = useState<{id: number, name: string}[]>([])
+  const [suppliers, setSuppliers] = useState<{id: string, value: string}[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isFileUploading, setIsFileUploading] = useState(false)
 
@@ -34,13 +37,23 @@ export default function NewPurchaseInvoicePage() {
   useEffect(() => {
     setIsMounted(true)
     
-    // Load suppliers from localStorage
-    const savedSuppliers = localStorage.getItem('purchaseSuppliers');
-    if (savedSuppliers) {
-      const suppliersList = JSON.parse(savedSuppliers);
-      setSuppliers(suppliersList);
-    }
-  }, [])
+    // Load suppliers from database
+    const loadSuppliers = async () => {
+      try {
+        const supplierData = await getMastersByType('supplier');
+        // Map the master data to the expected format
+        const formattedSuppliers = supplierData.map(supplier => ({
+          id: supplier.id || '',
+          value: supplier.value
+        }));
+        setSuppliers(formattedSuppliers);
+      } catch (error) {
+        console.error("Error loading suppliers:", error);
+      }
+    };
+    
+    loadSuppliers();
+  }, [getMastersByType])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -78,7 +91,7 @@ export default function NewPurchaseInvoicePage() {
     e.stopPropagation()
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!invoiceNumber || !supplier || !amount) {
@@ -89,29 +102,21 @@ export default function NewPurchaseInvoicePage() {
     setIsSubmitting(true)
     
     try {
-      // Get existing invoices from localStorage
-      const savedInvoices = localStorage.getItem('purchaseInvoices');
-      let invoicesList = savedInvoices ? JSON.parse(savedInvoices) : [];
-      
-      // Create new invoice
-      const newInvoice = {
-        id: `PO-${String(invoicesList.length + 1).padStart(3, '0')}`,
-        date: invoiceDate ? invoiceDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      // Create new purchase record for database
+      const newPurchase: Purchase = {
+        id: db.generateId('PURCH'),
+        itemId: items || '1', // This should be a proper item ID in a real app
         supplier,
-        invoiceNumber,
-        amount: parseFloat(amount),
-        status,
-        paymentStatus,
-        items: parseInt(items) || 1,
-        notes,
-        fileAttached: selectedFile ? selectedFile.name : null
+        quantity: parseInt(items) || 1,
+        cost: parseFloat(amount),
+        date: invoiceDate || new Date(),
+        invoiceFile: selectedFile ? selectedFile.name : undefined,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      // Add to invoices list
-      invoicesList = [newInvoice, ...invoicesList];
-      
-      // Save to localStorage
-      localStorage.setItem('purchaseInvoices', JSON.stringify(invoicesList));
+      // Save to database
+      await db.purchases.add(newPurchase);
       
       toast.success("Purchase invoice added successfully");
       
@@ -183,8 +188,8 @@ export default function NewPurchaseInvoicePage() {
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.name}>
-                        {s.name}
+                      <SelectItem key={s.id} value={s.value}>
+                        {s.value}
                       </SelectItem>
                     ))}
                     {suppliers.length === 0 && (
