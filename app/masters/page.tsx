@@ -32,7 +32,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Pencil, Trash2, Search } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash2, Search, Sparkles } from "lucide-react"
 import { useDB } from "@/contexts/db-context"
 import { Master } from "@/lib/db"
 import { toast } from "sonner"
@@ -250,6 +250,42 @@ export default function MastersPage() {
     }
   }
 
+  // Function to seed jewelry-specific masters
+  const seedJewelryMasters = async () => {
+    try {
+      await db.seedJewelryMasters()
+      toast.success("Jewelry-specific categories, metals, and purity values added successfully!")
+      // Refresh the masters list
+      setActiveTab("category") // First show categories
+      const refreshedMasters = await getAll<Master>('masters')
+      const filteredMasters = refreshedMasters.filter(
+        master => master.type === "category"
+      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      setMasters(filteredMasters)
+    } catch (error) {
+      console.error("Error seeding jewelry masters:", error)
+      toast.error("Failed to add jewelry masters")
+    }
+  }
+
+  // Function to clean up masters data (remove duplicates and unwanted categories)
+  const cleanupMastersData = async () => {
+    try {
+      await db.cleanupMastersData();
+      toast.success("Removed duplicate entries and cleaned up categories!");
+      
+      // Refresh the masters list
+      const refreshedMasters = await getAll<Master>('masters')
+      const filteredMasters = refreshedMasters.filter(
+        master => master.type === activeTab
+      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      setMasters(filteredMasters)
+    } catch (error) {
+      console.error("Error cleaning up masters data:", error)
+      toast.error("Failed to clean up masters data")
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -260,42 +296,60 @@ export default function MastersPage() {
           </p>
         </div>
         
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add New
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</DialogTitle>
-              <DialogDescription>
-                Enter the value for the new {activeTab}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="value">Value</Label>
-                  <Input
-                    id="value"
-                    value={newMasterValue}
-                    onChange={(e) => setNewMasterValue(e.target.value)}
-                    placeholder={`Enter ${activeTab} value...`}
-                  />
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+            onClick={cleanupMastersData}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Remove Duplicates
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700"
+            onClick={seedJewelryMasters}
+          >
+            <Sparkles className="mr-2 h-4 w-4" /> Add Jewelry Masters
+          </Button>
+          
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add New
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</DialogTitle>
+                <DialogDescription>
+                  Enter the value for the new {activeTab}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="value">Value</Label>
+                    <Input
+                      id="value"
+                      value={newMasterValue}
+                      onChange={(e) => setNewMasterValue(e.target.value)}
+                      placeholder={`Enter ${activeTab} value...`}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <DialogClose asChild>
-                <Button onClick={handleAddMaster}>Add</Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button onClick={handleAddMaster}>Add</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="space-y-4">

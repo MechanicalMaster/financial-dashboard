@@ -38,6 +38,7 @@ import { InventoryItem } from "@/lib/db"
 import { format } from "date-fns"
 import { MasterDropdown } from "@/components/masters/master-dropdown"
 import { SortDropdown } from "@/components/inventory/sort-dropdown"
+import db from "@/lib/db"
 
 // Define the StockStatus type to match the one in product-card.tsx
 type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
@@ -56,6 +57,22 @@ export default function InventoryPage() {
   const [isMounted, setIsMounted] = useState(false)
   const itemsPerPage = 12
   const { getAll, remove } = useDB()
+
+  // One-time cleanup on first load
+  useEffect(() => {
+    // Skip during server-side rendering
+    if (typeof window === 'undefined') return;
+    
+    const cleanupDummyData = async () => {
+      try {
+        await db.cleanupInventoryData();
+      } catch (error) {
+        console.error("Error cleaning inventory data:", error);
+      }
+    };
+    
+    cleanupDummyData();
+  }, []);
 
   // Ensure client-side mounting is detected
   useEffect(() => {

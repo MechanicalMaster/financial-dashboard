@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { RecentActivity } from "@/components/purchases/recent-activity"
 import { StatsCard } from "@/components/purchases/stats-card"
 import { Building2, Clock, FileText, FilePlus2, Package, Percent, PlusSquare, Truck, ShoppingCart, Users2 } from "lucide-react"
 import Link from "next/link"
+import { useDB } from "@/contexts/db-context"
 
 // Sample recent purchase data
 const recentPurchases = [
@@ -112,6 +113,21 @@ const overviewItems = [
 
 export default function PurchasesPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
+  const { db } = useDB();
+
+  // One-time cleanup for dummy data
+  useEffect(() => {
+    const cleanupDummyData = async () => {
+      try {
+        // Call the cleanupPurchaseData method directly
+        await db.cleanupPurchaseData();
+      } catch (error) {
+        console.error("Error cleaning up purchase data:", error);
+      }
+    };
+    
+    cleanupDummyData();
+  }, [db]);
 
   return (
     <div className="space-y-6">
