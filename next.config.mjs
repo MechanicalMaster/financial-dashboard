@@ -5,7 +5,7 @@ try {
   // ignore error
 }
 
-// Check if we're in production environment (Vercel)
+// For Vercel deployments, we don't need a basePath
 const isProd = process.env.NODE_ENV === 'production';
 
 /** @type {import('next').NextConfig} */
@@ -24,10 +24,7 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
-  // Add basePath only in production environment
-  ...(isProd && {
-    basePath: '/financial-dashboard',
-  }),
+  // Removing basePath for production to fix 404 errors on Vercel
 }
 
 mergeConfig(nextConfig, userConfig)
