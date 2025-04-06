@@ -21,7 +21,7 @@ import { getPath } from "@/lib/utils/path-utils"
 // Define the navigation tile data with icons and routes
 const navigationTiles = [
   { name: "Purchases", href: "/purchases", icon: ShoppingCart, description: "Manage your purchase orders" },
-  { name: "Stock", href: "/inventory", icon: Package, description: "Track your inventory items" },
+  { name: "Stock", href: "/stock", icon: Package, description: "Track your inventory items" },
   { name: "Old Stock", href: "/old-stock", icon: Package, description: "Manage used or second-hand items" },
   { name: "Customers", href: "/customers", icon: Users, description: "View and manage customer information" },
   { name: "Invoices", href: "/invoices", icon: Receipt, description: "Create and manage invoices" },
@@ -325,17 +325,10 @@ export default function HomePage() {
 
         {/* Content Container with frosted glass effect */}
         <div className="container mx-auto px-4 py-8 relative z-10">
-          <div className="flex justify-between items-center mb-2">
+          <div className="mb-2">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
-              {settings?.firmDetails?.firmName || "Kuber"}
+              Welcome to {settings?.firmDetails?.firmName || "Kuber"}
             </h1>
-            <Button
-              onClick={logout}
-              variant="outline"
-              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-            >
-              {t("logout")}
-            </Button>
           </div>
           
           {/* Decorative Header Line with shimmer */}

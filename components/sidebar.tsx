@@ -35,7 +35,7 @@ interface NavItemType {
 
 const navigation: NavItemType[] = [
   { name: "Purchases", href: "/purchases", icon: ShoppingCart },
-  { name: "Stock", href: "/inventory", icon: Package },
+  { name: "Stock", href: "/stock", icon: Package },
   { name: "Old Stock", href: "/old-stock", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Invoices", href: "/invoices", icon: Receipt },
@@ -57,6 +57,19 @@ export function Sidebar() {
   useEffect(() => {
     setIsMobileOpen(false)
   }, [pathname])
+  
+  // Listen for custom toggle-sidebar event from TopNav
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      setIsMobileOpen(!isMobileOpen)
+    }
+    
+    window.addEventListener('toggle-sidebar', handleToggleSidebar)
+    
+    return () => {
+      window.removeEventListener('toggle-sidebar', handleToggleSidebar)
+    }
+  }, [isMobileOpen])
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
