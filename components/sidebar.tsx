@@ -34,7 +34,6 @@ interface NavItemType {
 }
 
 const navigation: NavItemType[] = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Purchases", href: "/purchases", icon: ShoppingCart },
   { name: "Stock", href: "/inventory", icon: Package },
   { name: "Old Stock", href: "/old-stock", icon: Package },

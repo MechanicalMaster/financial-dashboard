@@ -57,14 +57,14 @@ const defaultSettings: UserSettings = {
   theme: "system",
   layout: "default",
   firmDetails: {
-    firmName: "Flowers & Saints",
-    firmLogo: "https://example.com/logo.png",
-    address: "123 Business Street, Suite 101, Cityville, State 12345",
-    phoneNumber: "+1 (555) 987-6543",
-    gstInNumber: "GST123456789",
-    dateOfEstablishment: "01/01/2020",
-    constitution: "Private Limited Company",
-    authToken: "abc123"
+    firmName: "Kuber",
+    firmLogo: "/logo.png",
+    address: "123 Business Park, Mumbai, India",
+    phoneNumber: "+91 98765 43210",
+    gstInNumber: "27AADCB2230M1ZT",
+    dateOfEstablishment: "2010-01-15",
+    constitution: "Proprietorship",
+    authToken: "abc123xyz456"
   },
   notifications: {
     email: true,

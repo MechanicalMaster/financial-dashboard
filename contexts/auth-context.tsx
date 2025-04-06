@@ -21,7 +21,7 @@ const publicRoutes = ['/', '/login']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() || "/"
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -34,11 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // If on a private route and not authenticated, redirect to login
     if (!authStatus && !publicRoutes.includes(pathname)) {
       router.push(getPath("/login"))
+      return
     }
 
-    // If authenticated and on login page, redirect to dashboard
+    // If authenticated and on login page, redirect to home
     if (authStatus && pathname === "/login") {
-      router.push(getPath("/dashboard"))
+      router.push(getPath("/"))
+      return
+    }
+    
+    // If authenticated and on root path, ensure the page refreshes to show the authenticated UI
+    if (authStatus && pathname === "/") {
+      // We're already on the home page with auth state, no need to redirect
+      // Just ensure the component re-renders with the updated auth state
     }
   }, [pathname, router])
 
@@ -47,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (phone === "8454881721" && password === "pwd") {
       localStorage.setItem("isAuthenticated", "true")
       setIsAuthenticated(true)
-      router.push(getPath("/dashboard"))
+      router.push(getPath("/"))
     } else {
       throw new Error("Invalid credentials")
     }
