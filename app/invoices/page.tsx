@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -14,6 +14,7 @@ import { type InvoiceStatus } from "@/components/invoices/invoice-status-badge"
 import { BookingLedger, type BookingLine, type BookingPayment } from "@/components/invoices/booking-ledger"
 import Link from "next/link"
 import { getPath } from "@/lib/utils/path-utils"
+import db, { Invoice as DBInvoice } from "@/lib/db"
 
 // Define invoice type
 interface Invoice {
@@ -26,263 +27,11 @@ interface Invoice {
   status: InvoiceStatus
 }
 
-// Sample invoice data
-const invoices: Invoice[] = [
-  {
-    id: "INV-001",
-    date: "2023-07-15",
-    dueDate: "2023-08-15",
-    client: "Acme Corporation",
-    amount: 1250.0,
-    status: "paid",
-  },
-  {
-    id: "INV-002",
-    date: "2023-07-20",
-    dueDate: "2023-08-20",
-    client: "Globex Industries",
-    amount: 3450.75,
-    status: "unpaid",
-  },
-  {
-    id: "INV-003",
-    date: "2023-06-30",
-    dueDate: "2023-07-30",
-    client: "Stark Enterprises",
-    amount: 7800.5,
-    status: "overdue",
-  },
-  {
-    id: "INV-004",
-    date: "2023-07-05",
-    dueDate: "2023-08-05",
-    client: "Wayne Industries",
-    amount: 2340.25,
-    status: "paid",
-  },
-  {
-    id: "INV-005",
-    date: "2023-07-12",
-    dueDate: "2023-08-12",
-    client: "Oscorp",
-    amount: 5670.8,
-    status: "unpaid",
-  },
-  {
-    id: "INV-006",
-    date: "2023-06-25",
-    dueDate: "2023-07-25",
-    client: "LexCorp",
-    amount: 9870.45,
-    status: "overdue",
-  },
-  {
-    id: "INV-007",
-    date: "2023-07-18",
-    dueDate: "2023-08-18",
-    client: "Umbrella Corporation",
-    amount: 4560.3,
-    status: "paid",
-  },
-  {
-    id: "INV-008",
-    date: "2023-07-22",
-    dueDate: "2023-08-22",
-    client: "Cyberdyne Systems",
-    amount: 6780.9,
-    status: "unpaid",
-  },
-  {
-    id: "INV-009",
-    date: "2023-06-28",
-    dueDate: "2023-07-28",
-    client: "Weyland-Yutani Corp",
-    amount: 8900.15,
-    status: "overdue",
-  },
-  {
-    id: "INV-010",
-    date: "2023-07-10",
-    dueDate: "2023-08-10",
-    client: "Massive Dynamic",
-    amount: 3210.6,
-    status: "paid",
-  },
-]
+// Empty invoice data instead of sample data
+const invoices: Invoice[] = []
 
-// Sample booking ledger data
-const bookingLines: BookingLine[] = [
-  {
-    id: "BKG-0001",
-    customerName: "Globex Industries",
-    customerId: "CUST-002",
-    startDate: "2023-05-15",
-    totalAccumulated: 5000.00,
-    status: "active",
-    payments: [
-      {
-        id: "PAY-001",
-        bookingId: "BKG-0001",
-        date: "2023-05-15",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Initial Payment"
-      },
-      {
-        id: "PAY-002",
-        bookingId: "BKG-0001",
-        date: "2023-06-15",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Monthly Payment"
-      },
-      {
-        id: "PAY-003",
-        bookingId: "BKG-0001",
-        date: "2023-07-15",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Monthly Payment"
-      },
-      {
-        id: "PAY-004",
-        bookingId: "BKG-0001",
-        date: "2023-08-15",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Monthly Payment"
-      },
-      {
-        id: "PAY-005",
-        bookingId: "BKG-0001",
-        date: "2023-09-15",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Monthly Payment"
-      }
-    ]
-  },
-  {
-    id: "BKG-0002",
-    customerName: "Stark Enterprises",
-    customerId: "CUST-003",
-    startDate: "2023-06-10",
-    totalAccumulated: 3000.00,
-    status: "pending_purchase",
-    payments: [
-      {
-        id: "PAY-006",
-        bookingId: "BKG-0002",
-        date: "2023-06-10",
-        amount: 1500.00,
-        paymentMethod: "Bank Transfer",
-        reference: "Initial Payment"
-      },
-      {
-        id: "PAY-007",
-        bookingId: "BKG-0002",
-        date: "2023-07-10",
-        amount: 1500.00,
-        paymentMethod: "Bank Transfer",
-        reference: "Monthly Payment"
-      }
-    ]
-  },
-  {
-    id: "BKG-0003",
-    customerName: "Wayne Industries",
-    customerId: "CUST-004",
-    startDate: "2023-04-05",
-    totalAccumulated: 0.00, // Zero because already redeemed
-    status: "completed",
-    payments: [
-      {
-        id: "PAY-008",
-        bookingId: "BKG-0003",
-        date: "2023-04-05",
-        amount: 2000.00,
-        paymentMethod: "Credit Card",
-        reference: "Initial Payment"
-      },
-      {
-        id: "PAY-009",
-        bookingId: "BKG-0003",
-        date: "2023-05-05",
-        amount: 2000.00,
-        paymentMethod: "Credit Card",
-        reference: "Monthly Payment"
-      },
-      {
-        id: "PAY-010",
-        bookingId: "BKG-0003",
-        date: "2023-06-05",
-        amount: 2000.00,
-        paymentMethod: "Credit Card",
-        reference: "Monthly Payment"
-      },
-      {
-        id: "PAY-011",
-        bookingId: "BKG-0003",
-        date: "2023-07-05",
-        amount: 2000.00,
-        paymentMethod: "Credit Card",
-        reference: "Final Payment"
-      }
-    ]
-  },
-  {
-    id: "BKG-0004",
-    customerName: "Acme Corporation",
-    customerId: "CUST-001",
-    startDate: "2023-08-01",
-    totalAccumulated: 2500.00,
-    status: "active",
-    payments: [
-      {
-        id: "PAY-012",
-        bookingId: "BKG-0004",
-        date: "2023-08-01",
-        amount: 1000.00,
-        paymentMethod: "Cash",
-        reference: "Initial Payment"
-      },
-      {
-        id: "PAY-013",
-        bookingId: "BKG-0004",
-        date: "2023-09-01",
-        amount: 1500.00,
-        paymentMethod: "Cash",
-        reference: "Monthly Payment"
-      }
-    ]
-  },
-  {
-    id: "BKG-0005",
-    customerName: "Oscorp",
-    customerId: "CUST-005",
-    startDate: "2023-07-20",
-    totalAccumulated: 1000.00,
-    status: "active",
-    payments: [
-      {
-        id: "PAY-014",
-        bookingId: "BKG-0005",
-        date: "2023-07-20",
-        amount: 500.00,
-        paymentMethod: "UPI",
-        reference: "Initial Payment"
-      },
-      {
-        id: "PAY-015",
-        bookingId: "BKG-0005",
-        date: "2023-08-20",
-        amount: 500.00,
-        paymentMethod: "UPI",
-        reference: "Monthly Payment"
-      }
-    ]
-  }
-]
+// Empty booking ledger data instead of sample data
+const bookingLines: BookingLine[] = []
 
 // Extract all booking payments from booking lines
 const bookingPayments: BookingPayment[] = bookingLines.flatMap(line => line.payments)
@@ -302,6 +51,38 @@ export default function InvoicesPage() {
   })
 
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage)
+
+  // Add a cleanup function that runs once on component mount
+  useEffect(() => {
+    const cleanupDummyInvoices = async () => {
+      try {
+        // Get all invoices
+        const allInvoices = await db.invoices.toArray();
+        
+        // Check if there are any dummy invoices
+        if (allInvoices.length > 0) {
+          // These are the IDs of all the demo invoices we want to remove
+          const dummyInvoiceIds = allInvoices
+            .map(invoice => invoice.id)
+            .filter((id): id is string => id !== undefined);
+          
+          if (dummyInvoiceIds.length > 0) {
+            // Delete all dummy invoices
+            await db.invoices.bulkDelete(dummyInvoiceIds);
+            console.log(`Removed ${dummyInvoiceIds.length} dummy invoices`);
+            
+            // Force refresh the page to show empty state
+            window.location.reload();
+          }
+        }
+      } catch (error) {
+        console.error("Error removing dummy invoices:", error);
+      }
+    };
+    
+    // Run the cleanup function
+    cleanupDummyInvoices();
+  }, []);
 
   return (
     <div className="container py-6">

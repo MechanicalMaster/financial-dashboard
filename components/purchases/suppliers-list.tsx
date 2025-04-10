@@ -1,139 +1,95 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import {
+  Building,
+  Building2,
+  Mail,
+  MoreHorizontal,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  Trash,
+  User,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Building2, Eye, FileText, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import { useDB } from "@/contexts/db-context"
 import { Pagination } from "@/components/invoices/pagination"
-import { toast } from "sonner"
+import Link from "next/link"
 
+// Define the supplier interface
 interface Supplier {
-  id: number
-  name: string
-  contact: string
-  email: string
-  phone: string
-  invoices: number
+  id: number;
+  name: string;
+  contact?: string;
+  email?: string;
+  phone?: string;
+  invoices?: number;
 }
 
-interface SuppliersListProps {
-  suppliers: Supplier[]
-}
-
-export function SuppliersList({ suppliers: initialSuppliers }: SuppliersListProps) {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+export function SuppliersList({ suppliers: propSuppliers = [] }: { suppliers?: Supplier[] }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
-  const [newSupplierName, setNewSupplierName] = useState("")
-  const [newSupplierContact, setNewSupplierContact] = useState("")
-  const [newSupplierEmail, setNewSupplierEmail] = useState("")
-  const [newSupplierPhone, setNewSupplierPhone] = useState("")
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const itemsPerPage = 8
+  const { getAll, getMastersByType } = useDB()
 
-  // Load suppliers from localStorage on mount, or use initial suppliers as fallback
   useEffect(() => {
-    const savedSuppliers = localStorage.getItem('purchaseSuppliers');
-    
-    if (savedSuppliers) {
-      setSuppliers(JSON.parse(savedSuppliers));
-    } else {
-      setSuppliers(initialSuppliers);
-      // Save initial suppliers to localStorage for future reference
-      localStorage.setItem('purchaseSuppliers', JSON.stringify(initialSuppliers));
+    const loadSuppliers = async () => {
+      try {
+        // Try to get suppliers from masters database
+        const supplierMasters = await getMastersByType('supplier')
+        
+        // Convert masters to supplier format
+        const suppliersList: Supplier[] = supplierMasters.map((master, index) => ({
+          id: index + 1,
+          name: master.value,
+          contact: "",
+          email: "",
+          phone: "",
+          invoices: 0
+        }))
+        
+        setSuppliers(suppliersList)
+      } catch (error) {
+        console.error("Error loading suppliers:", error)
+        
+        // Fallback to props if we can't load from the database
+        if (propSuppliers.length > 0) {
+          setSuppliers(propSuppliers)
+        }
+      }
     }
-  }, [initialSuppliers]);
+    
+    loadSuppliers()
+  }, [getMastersByType, propSuppliers])
 
   // Filter suppliers based on search query
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    const matchesSearch =
-      supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.email.toLowerCase().includes(searchQuery.toLowerCase())
-
-    return matchesSearch
-  })
+  const filteredSuppliers = suppliers.filter((supplier) =>
+    supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (supplier.contact && supplier.contact.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (supplier.email && supplier.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (supplier.phone && supplier.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedSuppliers = filteredSuppliers.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleAddSupplier = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!newSupplierName) {
-      toast.error("Please enter a supplier name")
-      return
-    }
-
-    // Create new supplier
-    const newSupplier = {
-      id: Date.now(), // Use current timestamp as unique ID
-      name: newSupplierName,
-      contact: newSupplierContact,
-      email: newSupplierEmail,
-      phone: newSupplierPhone,
-      invoices: 0,
-    }
-
-    // Add to suppliers list
-    const updatedSuppliers = [...suppliers, newSupplier];
-    setSuppliers(updatedSuppliers);
-    
-    // Save to localStorage
-    localStorage.setItem('purchaseSuppliers', JSON.stringify(updatedSuppliers));
-
-    // Reset form and close dialog
-    toast.success(`Supplier "${newSupplierName}" added successfully`)
-    setNewSupplierName("")
-    setNewSupplierContact("")
-    setNewSupplierEmail("")
-    setNewSupplierPhone("")
-    setIsAddSupplierOpen(false)
-  }
-
-  const handleViewSupplier = (id: number) => {
-    toast.info(`Viewing supplier details for ID: ${id}`)
-  }
-
-  const handleEditSupplier = (id: number) => {
-    toast.info(`Editing supplier with ID: ${id}`)
-  }
-
-  const handleDeleteSupplier = (id: number) => {
-    // Ask for confirmation
-    if (confirm(`Are you sure you want to delete this supplier?`)) {
-      // Remove from suppliers array
-      const updatedSuppliers = suppliers.filter(supplier => supplier.id !== id);
-      
-      // Update state
-      setSuppliers(updatedSuppliers);
-      
-      // Save to localStorage
-      localStorage.setItem('purchaseSuppliers', JSON.stringify(updatedSuppliers));
-      
-      toast.success("Supplier deleted successfully");
-    }
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative w-full sm:w-64">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
@@ -143,135 +99,108 @@ export function SuppliersList({ suppliers: initialSuppliers }: SuppliersListProp
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <Button asChild>
+          <Link href="/purchases/supplier/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Supplier
+          </Link>
+        </Button>
+      </div>
 
-        <Dialog open={isAddSupplierOpen} onOpenChange={setIsAddSupplierOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Supplier
+      {suppliers.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center p-10">
+            <Building className="h-12 w-12 text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No Suppliers Found</CardTitle>
+            <p className="text-muted-foreground text-center mb-4">
+              Add your first supplier to get started with managing your supply chain.
+            </p>
+            <Button asChild>
+              <Link href="/purchases/supplier/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Supplier
+              </Link>
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Supplier</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddSupplier} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier-name">Supplier Name *</Label>
-                <Input
-                  id="supplier-name"
-                  value={newSupplierName}
-                  onChange={(e) => setNewSupplierName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplier-contact">Contact Person</Label>
-                <Input
-                  id="supplier-contact"
-                  value={newSupplierContact}
-                  onChange={(e) => setNewSupplierContact(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplier-email">Email</Label>
-                <Input
-                  id="supplier-email"
-                  type="email"
-                  value={newSupplierEmail}
-                  onChange={(e) => setNewSupplierEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplier-phone">Phone</Label>
-                <Input
-                  id="supplier-phone"
-                  value={newSupplierPhone}
-                  onChange={(e) => setNewSupplierPhone(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddSupplierOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Add Supplier</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact Person</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead className="text-center">Invoices</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedSuppliers.length > 0 ? (
-              paginatedSuppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {supplier.name}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedSuppliers.map((supplier) => (
+              <Card key={supplier.id} className="overflow-hidden">
+                <CardHeader className="p-4 pb-2 flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-base truncate">{supplier.name}</CardTitle>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="cursor-pointer" asChild>
+                        <Link href={`/purchases/supplier/${supplier.id}`}>
+                          View Details
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer" asChild>
+                        <Link href={`/purchases/supplier/${supplier.id}/edit`}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600 cursor-pointer">
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="p-4 pt-2 space-y-2">
+                  {supplier.contact && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Contact:</span>
+                      <span className="font-medium">{supplier.contact}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>{supplier.contact}</TableCell>
-                  <TableCell>{supplier.email}</TableCell>
-                  <TableCell>{supplier.phone}</TableCell>
-                  <TableCell className="text-center">{supplier.invoices}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleViewSupplier(supplier.id)}>
-                          <Eye className="mr-2 h-4 w-4" /> View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditSupplier(supplier.id)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" /> View Invoices
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No suppliers found. Try adjusting your search or add a new supplier.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  )}
+                  {supplier.email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium truncate">{supplier.email}</span>
+                    </div>
+                  )}
+                  {supplier.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span className="font-medium">{supplier.phone}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t mt-2">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">{supplier.invoices || 0}</span> Invoices
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {paginatedSuppliers.length} of {filteredSuppliers.length} suppliers
-        </p>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-      </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-end space-x-2">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

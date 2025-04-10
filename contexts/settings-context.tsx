@@ -24,6 +24,17 @@ export interface UserSettings {
     dateOfEstablishment: string
     constitution: string
     authToken: string
+    email: string
+    website: string
+  }
+  invoiceTemplates: {
+    activeTemplate: string
+    templates: {
+      id: string
+      name: string
+      description: string
+      imagePath: string
+    }[]
   }
   notifications: {
     email: boolean
@@ -64,7 +75,26 @@ const defaultSettings: UserSettings = {
     gstInNumber: "27AADCB2230M1ZT",
     dateOfEstablishment: "2010-01-15",
     constitution: "Proprietorship",
-    authToken: "abc123xyz456"
+    authToken: "abc123xyz456",
+    email: "kuber@example.com",
+    website: "www.kuber.com"
+  },
+  invoiceTemplates: {
+    activeTemplate: "default",
+    templates: [
+      {
+        id: "default",
+        name: "Default",
+        description: "Simple clean invoice template",
+        imagePath: "/templates/default.png"
+      },
+      {
+        id: "jeweller",
+        name: "Jeweller",
+        description: "Specialized template for jewellery business",
+        imagePath: "/templates/jeweller.png"
+      }
+    ]
   },
   notifications: {
     email: true,
@@ -91,6 +121,7 @@ interface SettingsContextType {
   updateNotificationSettings: (settings: Partial<UserSettings["notifications"]>) => void
   updatePrivacySettings: (settings: Partial<UserSettings["privacy"]>) => void
   updateFirmDetails: (settings: Partial<UserSettings["firmDetails"]>) => void
+  updateInvoiceTemplates: (templates: Partial<UserSettings["invoiceTemplates"]>) => void
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -110,7 +141,35 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         const savedSettings = await get<UserSettings>('settings', userId);
         
         if (savedSettings) {
-          setSettings(savedSettings);
+          // Merge saved settings with default settings to ensure new properties are initialized
+          const mergedSettings = {
+            ...defaultSettings,
+            ...savedSettings,
+            // Ensure nested objects are properly merged
+            firmDetails: {
+              ...defaultSettings.firmDetails,
+              ...(savedSettings.firmDetails || {})
+            },
+            invoiceTemplates: {
+              ...defaultSettings.invoiceTemplates,
+              ...(savedSettings.invoiceTemplates || {})
+            },
+            notifications: {
+              ...defaultSettings.notifications,
+              ...(savedSettings.notifications || {})
+            },
+            privacy: {
+              ...defaultSettings.privacy,
+              ...(savedSettings.privacy || {})
+            }
+          };
+          
+          setSettings(mergedSettings);
+          
+          // Update the database with the merged settings if new properties were added
+          if (!savedSettings.invoiceTemplates) {
+            await update('settings', userId, mergedSettings);
+          }
         } else {
           // If no settings exist yet, create them with defaults
           await add('settings', {
@@ -128,7 +187,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (!isLoading) {
       loadSettings();
     }
-  }, [get, add, userId, isLoading]);
+  }, [get, add, update, userId, isLoading]);
 
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
     const updatedSettings = { ...settings, ...newSettings, updatedAt: new Date() }
@@ -186,6 +245,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const updateInvoiceTemplates = async (invoiceTemplates: Partial<UserSettings["invoiceTemplates"]>) => {
+    const updatedSettings = {
+      ...settings,
+      invoiceTemplates: { ...settings.invoiceTemplates, ...invoiceTemplates },
+      updatedAt: new Date()
+    }
+    setSettings(updatedSettings)
+    
+    try {
+      await update('settings', userId, updatedSettings);
+    } catch (error) {
+      console.error('Error saving invoice template settings:', error);
+    }
+  }
+
   return (
     <SettingsContext.Provider
       value={{
@@ -194,6 +268,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         updateNotificationSettings,
         updatePrivacySettings,
         updateFirmDetails,
+        updateInvoiceTemplates,
       }}
     >
       {children}

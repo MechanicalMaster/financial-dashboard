@@ -99,8 +99,8 @@ export default function AddStockItemPage() {
       // Set a default category value after a short delay to allow MasterDropdown to load
       const timeoutId = setTimeout(() => {
         if (!itemCategory) {
-          setItemCategory("Furniture")
-          console.log("Set default category to Furniture")
+          setItemCategory("Chain")
+          console.log("Set default category to Chain")
         }
       }, 1000)
       
@@ -183,6 +183,29 @@ export default function AddStockItemPage() {
       return
     }
 
+    // Try to load the saved configuration
+    try {
+      const savedConfig = localStorage.getItem('labelConfig');
+      
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        
+        // Update state with saved configuration
+        setLabelType(config.labelType || 'standard');
+        setLabelQuantity(config.labelQuantity || '1');
+        setIncludeProductName(config.includeProductName !== undefined ? config.includeProductName : true);
+        setIncludePrice(config.includePrice !== undefined ? config.includePrice : true);
+        setIncludeBarcode(config.includeBarcode !== undefined ? config.includeBarcode : true);
+        setIncludeDate(config.includeDate !== undefined ? config.includeDate : true);
+        setIncludeQr(config.includeQr !== undefined ? config.includeQr : true);
+        setIncludeMetal(config.includeMetal !== undefined ? config.includeMetal : true);
+        setIncludePurity(config.includePurity !== undefined ? config.includePurity : true);
+        setIncludeWeight(config.includeWeight !== undefined ? config.includeWeight : true);
+      }
+    } catch (error) {
+      console.error("Error loading label configuration:", error);
+    }
+
     // Use setTimeout to ensure the DOM elements are rendered
     setTimeout(() => {
       // Get references to the barcode and QR code elements
@@ -247,7 +270,7 @@ export default function AddStockItemPage() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Inventory Labels - ${itemName}</title>
+        <title>Stock Labels - ${itemName}</title>
         <style>
           body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -560,5 +583,4 @@ export default function AddStockItemPage() {
       </Card>
     </div>
   )
-}
-
+} 

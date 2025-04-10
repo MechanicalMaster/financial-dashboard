@@ -30,7 +30,7 @@ const defaultAvatars = [
 ]
 
 export default function SettingsPage() {
-  const { settings, updateSettings, updateNotificationSettings, updatePrivacySettings, updateFirmDetails } = useSettings()
+  const { settings, updateSettings, updateNotificationSettings, updatePrivacySettings, updateFirmDetails, updateInvoiceTemplates } = useSettings()
   const [selectedAvatar, setSelectedAvatar] = useState(settings.avatar)
 
   const handleSaveAccount = () => {
@@ -54,13 +54,21 @@ export default function SettingsPage() {
     toast.success("Privacy settings saved successfully")
   }
 
+  const handleSaveInvoiceTemplate = (templateId: string) => {
+    updateInvoiceTemplates({
+      activeTemplate: templateId
+    })
+    toast.success("Invoice template updated successfully")
+  }
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="firm-details">Firm Details</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -131,6 +139,10 @@ export default function SettingsPage() {
                   type="tel"
                   value={settings.phone}
                   onChange={(e) => updateSettings({ phone: e.target.value })}
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  inputMode="numeric"
+                  title="Please enter exactly 10 digits"
                 />
               </div>
             </CardContent>
@@ -180,7 +192,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">This name will be displayed in the top corner of the application.</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="firm-address">Address</Label>
+                <Label htmlFor="firm-address">Firm Address</Label>
                 <textarea
                   id="firm-address"
                   className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -190,40 +202,64 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="firm-phone">Phone Number</Label>
+                <Label htmlFor="firm-phone">Firm Phone Number</Label>
                 <Input
                   id="firm-phone"
                   type="tel"
                   value={settings?.firmDetails?.phoneNumber || ""}
                   onChange={(e) => updateFirmDetails({ phoneNumber: e.target.value })}
                   placeholder="Enter your business phone number"
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  inputMode="numeric"
+                  title="Please enter exactly 10 digits"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gst-number">GST IN Number</Label>
+                <Label htmlFor="firm-gst">Firm GSTIN Number</Label>
                 <Input
-                  id="gst-number"
+                  id="firm-gst"
                   value={settings?.firmDetails?.gstInNumber || ""}
                   onChange={(e) => updateFirmDetails({ gstInNumber: e.target.value })}
-                  placeholder="Enter your GST Identification Number"
+                  placeholder="Enter your GSTIN"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="establishment-date">Date of Establishment</Label>
+                <Label htmlFor="firm-email">Firm Email Address</Label>
                 <Input
-                  id="establishment-date"
+                  id="firm-email"
+                  type="email"
+                  value={settings?.firmDetails?.email || ""}
+                  onChange={(e) => updateFirmDetails({ email: e.target.value })}
+                  placeholder="Enter your business email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="firm-website">Firm Website</Label>
+                <Input
+                  id="firm-website"
+                  type="url"
+                  value={settings?.firmDetails?.website || ""}
+                  onChange={(e) => updateFirmDetails({ website: e.target.value })}
+                  placeholder="Enter your business website"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="firm-date">Date of Establishment</Label>
+                <Input
+                  id="firm-date"
                   type="date"
                   value={settings?.firmDetails?.dateOfEstablishment || ""}
                   onChange={(e) => updateFirmDetails({ dateOfEstablishment: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="constitution">Constitution</Label>
+                <Label htmlFor="firm-constitution">Constitution</Label>
                 <Select 
                   value={settings?.firmDetails?.constitution || ""}
                   onValueChange={(value) => updateFirmDetails({ constitution: value })}
                 >
-                  <SelectTrigger id="constitution">
+                  <SelectTrigger id="firm-constitution">
                     <SelectValue placeholder="Select business type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -237,9 +273,9 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="auth-token">Auth Token</Label>
+                <Label htmlFor="firm-auth-token">Auth Token</Label>
                 <Input
-                  id="auth-token"
+                  id="firm-auth-token"
                   type="password"
                   value={settings?.firmDetails?.authToken || ""}
                   onChange={(e) => updateFirmDetails({ authToken: e.target.value })}
@@ -255,6 +291,74 @@ export default function SettingsPage() {
                   toast.success("Firm details saved successfully");
                 }
               }}>Save Firm Details</Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoice Templates</CardTitle>
+              <CardDescription>Choose and manage your invoice templates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {settings.invoiceTemplates ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {settings.invoiceTemplates.templates.map((template) => (
+                    <div 
+                      key={template.id} 
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                        settings.invoiceTemplates.activeTemplate === template.id 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => handleSaveInvoiceTemplate(template.id)}
+                    >
+                      <div className="aspect-video rounded-md overflow-hidden bg-muted mb-3">
+                        {template.imagePath ? (
+                          <img 
+                            src={template.imagePath} 
+                            alt={template.name} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            No preview available
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium">{template.name}</h3>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                        </div>
+                        <div className="flex h-5 items-center space-x-2">
+                          <Checkbox 
+                            id={`template-${template.id}`} 
+                            checked={settings.invoiceTemplates.activeTemplate === template.id}
+                            onCheckedChange={() => handleSaveInvoiceTemplate(template.id)}
+                          />
+                          <label
+                            htmlFor={`template-${template.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Active
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <p>Loading template settings...</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <p className="text-sm text-muted-foreground">
+                The selected template will be used when generating invoice PDFs.
+              </p>
             </CardFooter>
           </Card>
         </TabsContent>

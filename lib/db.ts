@@ -101,6 +101,8 @@ export interface Settings {
     dateOfEstablishment: string;
     constitution: string;
     authToken: string;
+    email: string;
+    website: string;
   };
   notifications: {
     email: boolean;
@@ -291,7 +293,9 @@ export class InventoryDB extends Dexie {
             gstInNumber: "27AADCB2230M1ZT",
             dateOfEstablishment: "2010-01-15",
             constitution: "Proprietorship",
-            authToken: "abc123xyz456"
+            authToken: "abc123xyz456",
+            email: "info@kuber.com",
+            website: "https://www.kuber.com"
           },
           notifications: {
             email: true,

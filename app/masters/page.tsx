@@ -38,6 +38,7 @@ import { Master } from "@/lib/db"
 import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function MastersPage() {
   const [activeTab, setActiveTab] = useState("category")
@@ -57,8 +58,21 @@ export default function MastersPage() {
     { id: "payment_method", label: "Payment Methods" },
     { id: "unit", label: "Units" },
     { id: "purity", label: "Purity" },
-    { id: "metal", label: "Metal" }
+    { id: "metal", label: "Metal" },
+    { id: "label_config", label: "Label Configuration" }
   ]
+
+  // State for label configuration
+  const [labelQuantity, setLabelQuantity] = useState("1")
+  const [labelType, setLabelType] = useState("standard")
+  const [includeProductName, setIncludeProductName] = useState(true)
+  const [includePrice, setIncludePrice] = useState(true)
+  const [includeBarcode, setIncludeBarcode] = useState(true)
+  const [includeDate, setIncludeDate] = useState(true)
+  const [includeQr, setIncludeQr] = useState(true)
+  const [includeMetal, setIncludeMetal] = useState(true)
+  const [includePurity, setIncludePurity] = useState(true)
+  const [includeWeight, setIncludeWeight] = useState(true)
 
   // Fetch masters whenever active tab changes
   useEffect(() => {
@@ -98,6 +112,59 @@ export default function MastersPage() {
       isMounted = false
     }
   }, [activeTab, getAll])
+
+  // Add this function to save label configuration
+  const saveLabelConfiguration = () => {
+    try {
+      // Create an object with the current configuration
+      const labelConfig = {
+        labelType,
+        labelQuantity,
+        includeProductName,
+        includePrice,
+        includeBarcode,
+        includeDate,
+        includeQr,
+        includeMetal,
+        includePurity,
+        includeWeight,
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('labelConfig', JSON.stringify(labelConfig));
+      
+      toast.success("Label configuration saved successfully");
+    } catch (error) {
+      console.error("Error saving label configuration:", error);
+      toast.error("Failed to save label configuration");
+    }
+  }
+
+  // Load the label configuration when the component mounts
+  useEffect(() => {
+    try {
+      // Try to load saved configuration from localStorage
+      const savedConfig = localStorage.getItem('labelConfig');
+      
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        
+        // Update state with saved configuration
+        setLabelType(config.labelType || 'standard');
+        setLabelQuantity(config.labelQuantity || '1');
+        setIncludeProductName(config.includeProductName !== undefined ? config.includeProductName : true);
+        setIncludePrice(config.includePrice !== undefined ? config.includePrice : true);
+        setIncludeBarcode(config.includeBarcode !== undefined ? config.includeBarcode : true);
+        setIncludeDate(config.includeDate !== undefined ? config.includeDate : true);
+        setIncludeQr(config.includeQr !== undefined ? config.includeQr : true);
+        setIncludeMetal(config.includeMetal !== undefined ? config.includeMetal : true);
+        setIncludePurity(config.includePurity !== undefined ? config.includePurity : true);
+        setIncludeWeight(config.includeWeight !== undefined ? config.includeWeight : true);
+      }
+    } catch (error) {
+      console.error("Error loading label configuration:", error);
+    }
+  }, []);
 
   // Filter masters based on search query
   const filteredMasters = masters.filter(master => 
@@ -321,30 +388,27 @@ export default function MastersPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</DialogTitle>
+                <DialogTitle>Add New {getTabLabel(activeTab)}</DialogTitle>
                 <DialogDescription>
-                  Enter the value for the new {activeTab}
+                  Enter a value for the new {activeTab}.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="value">Value</Label>
-                    <Input
-                      id="value"
-                      value={newMasterValue}
-                      onChange={(e) => setNewMasterValue(e.target.value)}
-                      placeholder={`Enter ${activeTab} value...`}
-                    />
-                  </div>
-                </div>
+              <div className="py-4">
+                <Label htmlFor="name">Value</Label>
+                <Input 
+                  id="name" 
+                  value={newMasterValue} 
+                  onChange={(e) => setNewMasterValue(e.target.value)}
+                  placeholder={`Enter ${activeTab} value...`}
+                  className="mt-2"
+                />
               </div>
               <DialogFooter>
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button onClick={handleAddMaster}>Add</Button>
+                  <Button onClick={handleAddMaster}>Add {getTabLabel(activeTab)}</Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>
@@ -352,163 +416,317 @@ export default function MastersPage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex justify-between items-center">
-            <TabsList>
-              {masterTypes.map(type => (
-                <TabsTrigger key={type.id} value={type.id}>
-                  {type.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={`Search ${activeTab}...`}
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          {masterTypes.map((type) => (
+            <TabsTrigger key={type.id} value={type.id}>
+              {type.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-          {masterTypes.map(type => (
-            <TabsContent key={type.id} value={type.id} className="mt-6">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle>{type.label}</CardTitle>
-                  <CardDescription>
-                    Manage {type.label.toLowerCase()} used throughout the application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="py-8 text-center">
-                      <p>Loading {type.label.toLowerCase()}...</p>
+        {masterTypes.filter(type => type.id !== "label_config").map((type) => (
+          <TabsContent key={type.id} value={type.id}>
+            <div className="flex gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={`Search ${type.label.toLowerCase()}...`}
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle>{type.label}</CardTitle>
+                <CardDescription>
+                  Manage {type.label.toLowerCase()} used throughout the application
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Value</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                            Loading {type.label.toLowerCase()}...
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredMasters.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                            No {type.label.toLowerCase()} found. Add your first one!
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredMasters.map((master) => (
+                          <TableRow key={master.id}>
+                            <TableCell className="font-medium">{master.value}</TableCell>
+                            <TableCell>
+                              <Switch 
+                                checked={master.isActive}
+                                onCheckedChange={() => handleToggleStatus(master)}
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Actions</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => setEditingMaster(master)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleDeleteMaster(master)} className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+
+        {/* Label Configuration Tab */}
+        <TabsContent value="label_config">
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle>Label Configuration</CardTitle>
+              <CardDescription>
+                Configure and print labels for inventory items
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Label Options</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="labelType">Label Type</Label>
+                        <Select value={labelType} onValueChange={setLabelType}>
+                          <SelectTrigger id="labelType">
+                            <SelectValue placeholder="Select a label type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="standard">Standard (2.25" x 1.25")</SelectItem>
+                            <SelectItem value="large">Large (4" x 2")</SelectItem>
+                            <SelectItem value="small">Small (1" x 0.5")</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="labelQuantity">Number of Labels</Label>
+                        <Select value={labelQuantity} onValueChange={setLabelQuantity}>
+                          <SelectTrigger id="labelQuantity">
+                            <SelectValue placeholder="Select number of labels" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1</SelectItem>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  ) : filteredMasters.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <p>No {type.label.toLowerCase()} found.</p>
-                      <p className="text-muted-foreground mt-2">
-                        {searchQuery ? "Try a different search term" : "Add a new one to get started"}
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Include on Label</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeProductName" 
+                          checked={includeProductName} 
+                          onCheckedChange={(checked) => setIncludeProductName(checked === true)} 
+                        />
+                        <Label htmlFor="includeProductName">Product Name</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeMetal" 
+                          checked={includeMetal} 
+                          onCheckedChange={(checked) => setIncludeMetal(checked === true)} 
+                        />
+                        <Label htmlFor="includeMetal">Metal</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includePrice" 
+                          checked={includePrice} 
+                          onCheckedChange={(checked) => setIncludePrice(checked === true)} 
+                        />
+                        <Label htmlFor="includePrice">Price</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeWeight" 
+                          checked={includeWeight} 
+                          onCheckedChange={(checked) => setIncludeWeight(checked === true)} 
+                        />
+                        <Label htmlFor="includeWeight">Weight</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeBarcode" 
+                          checked={includeBarcode} 
+                          onCheckedChange={(checked) => setIncludeBarcode(checked === true)} 
+                        />
+                        <Label htmlFor="includeBarcode">Barcode</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includePurity" 
+                          checked={includePurity} 
+                          onCheckedChange={(checked) => setIncludePurity(checked === true)} 
+                        />
+                        <Label htmlFor="includePurity">Purity</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeDate" 
+                          checked={includeDate} 
+                          onCheckedChange={(checked) => setIncludeDate(checked === true)} 
+                        />
+                        <Label htmlFor="includeDate">Date</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="includeQr" 
+                          checked={includeQr} 
+                          onCheckedChange={(checked) => setIncludeQr(checked === true)} 
+                        />
+                        <Label htmlFor="includeQr">QR Code</Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={saveLabelConfiguration}
+                    className="w-full"
+                  >
+                    Save Configuration
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Label Preview</h3>
+                  <div className="border rounded-lg p-4 bg-white">
+                    <div className="aspect-[1.8/1] flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-4">
+                      <p className="text-center text-muted-foreground">
+                        Label preview will appear here when printing from inventory
                       </p>
                     </div>
-                  ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Value</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredMasters.map((master) => (
-                            <TableRow key={master.id}>
-                              <TableCell className="font-medium">{master.value}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    checked={master.isActive}
-                                    onCheckedChange={() => handleToggleStatus(master)}
-                                  />
-                                  <Badge variant={master.isActive ? "default" : "secondary"}>
-                                    {master.isActive ? "Active" : "Inactive"}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                      <span className="sr-only">Actions</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => {
-                                          e.preventDefault()
-                                          setEditingMaster(master)
-                                        }}>
-                                          <Pencil className="mr-2 h-4 w-4" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Edit {activeTab}</DialogTitle>
-                                          <DialogDescription>
-                                            Update the value for this {activeTab}
-                                          </DialogDescription>
-                                        </DialogHeader>
-                                        {editingMaster && (
-                                          <div className="space-y-4 py-4">
-                                            <div className="grid gap-4">
-                                              <div className="space-y-2">
-                                                <Label htmlFor="edit-value">Value</Label>
-                                                <Input
-                                                  id="edit-value"
-                                                  value={editingMaster.value}
-                                                  onChange={(e) => setEditingMaster({
-                                                    ...editingMaster,
-                                                    value: e.target.value
-                                                  })}
-                                                />
-                                              </div>
-                                              <div className="flex items-center space-x-2">
-                                                <Switch
-                                                  id="edit-active"
-                                                  checked={editingMaster.isActive}
-                                                  onCheckedChange={(checked) => setEditingMaster({
-                                                    ...editingMaster,
-                                                    isActive: checked
-                                                  })}
-                                                />
-                                                <Label htmlFor="edit-active">Active</Label>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
-                                        <DialogFooter>
-                                          <DialogClose asChild>
-                                            <Button variant="outline">Cancel</Button>
-                                          </DialogClose>
-                                          <DialogClose asChild>
-                                            <Button onClick={handleUpdateMaster}>Save</Button>
-                                          </DialogClose>
-                                        </DialogFooter>
-                                      </DialogContent>
-                                    </Dialog>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => handleDeleteMaster(master)}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Note: The actual configuration will be applied when printing labels from the Inventory section.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Dialog - keep existing code */}
+      <Dialog open={!!editingMaster} onOpenChange={(open) => !open && setEditingMaster(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {getTabLabel(activeTab)}</DialogTitle>
+            <DialogDescription>
+              Update the value for this {activeTab}
+            </DialogDescription>
+          </DialogHeader>
+          {editingMaster && (
+            <div className="space-y-4 py-4">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-value">Value</Label>
+                  <Input
+                    id="edit-value"
+                    value={editingMaster.value}
+                    onChange={(e) => setEditingMaster({
+                      ...editingMaster,
+                      value: e.target.value
+                    })}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="edit-active"
+                    checked={editingMaster.isActive}
+                    onCheckedChange={(checked) => setEditingMaster({
+                      ...editingMaster,
+                      isActive: checked
+                    })}
+                  />
+                  <Label htmlFor="edit-active">Active</Label>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMaster(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateMaster}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+// Helper to get the label for a tab
+function getTabLabel(tabId: string): string {
+  const labels: Record<string, string> = {
+    category: "Category",
+    status: "Status",
+    payment_method: "Payment Method",
+    unit: "Unit",
+    purity: "Purity",
+    metal: "Metal",
+    label_config: "Label Configuration"
+  }
+  
+  return labels[tabId] || tabId.charAt(0).toUpperCase() + tabId.slice(1)
 } 

@@ -195,6 +195,10 @@ export default function CreateBookingInvoicePage() {
                 value={customerMobile}
                 onChange={(e) => setCustomerMobile(e.target.value)}
                 placeholder="Customer mobile number"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                inputMode="numeric"
+                title="Please enter exactly 10 digits"
               />
             </div>
           </div>

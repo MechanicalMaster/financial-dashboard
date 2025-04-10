@@ -12,108 +12,20 @@ import { StatsCard } from "@/components/purchases/stats-card"
 import { Building2, Clock, FileText, FilePlus2, Package, Percent, PlusSquare, Truck, ShoppingCart, Users2 } from "lucide-react"
 import Link from "next/link"
 import { useDB } from "@/contexts/db-context"
-
-// Sample recent purchase data
-const recentPurchases = [
-  {
-    id: "PO-001",
-    supplier: "Office Supplies Inc.",
-    date: "2023-07-25",
-    amount: 1250.0,
-    status: "received",
-  },
-  {
-    id: "PO-002",
-    supplier: "Tech Solutions Ltd.",
-    date: "2023-07-22",
-    amount: 3450.75,
-    status: "pending",
-  },
-  {
-    id: "PO-003",
-    supplier: "Furniture Depot",
-    date: "2023-07-20",
-    amount: 7800.5,
-    status: "received",
-  },
-  {
-    id: "PO-004",
-    supplier: "Paper Products Co.",
-    date: "2023-07-18",
-    amount: 540.25,
-    status: "received",
-  },
-  {
-    id: "PO-005",
-    supplier: "Global Electronics",
-    date: "2023-07-15",
-    amount: 12670.8,
-    status: "cancelled",
-  },
-]
-
-// Sample supplier data
-const suppliers = [
-  {
-    id: 1,
-    name: "Office Supplies Inc.",
-    contact: "John Smith",
-    email: "john@officesupplies.com",
-    phone: "555-1234",
-    invoices: 12,
-  },
-  {
-    id: 2,
-    name: "Tech Solutions Ltd.",
-    contact: "Emily Johnson",
-    email: "emily@techsolutions.com",
-    phone: "555-5678",
-    invoices: 8,
-  },
-  {
-    id: 3,
-    name: "Furniture Depot",
-    contact: "Robert Davis",
-    email: "robert@furnituredepot.com",
-    phone: "555-9012",
-    invoices: 5,
-  },
-  {
-    id: 4,
-    name: "Paper Products Co.",
-    contact: "Sarah Miller",
-    email: "sarah@paperproducts.com",
-    phone: "555-3456",
-    invoices: 15,
-  },
-  {
-    id: 5,
-    name: "Global Electronics",
-    contact: "Michael Wilson",
-    email: "michael@globalelectronics.com",
-    phone: "555-7890",
-    invoices: 3,
-  },
-]
-
-// Sample statistics
-const statistics = [
-  { title: "Total Purchases", value: "₹45,678.50", icon: FileText, change: "+12.5%" },
-  { title: "Active Suppliers", value: "24", icon: Building2, change: "+3" },
-  { title: "Pending Orders", value: "7", icon: Clock, change: "-2" },
-  { title: "Avg. Turnaround", value: "4.2 days", icon: Truck, change: "-0.5 days" },
-]
-
-const overviewItems = [
-  { title: "Total Purchases", value: "₹45,678.50", icon: FileText, change: "+12.5%" },
-  { title: "Pending Orders", value: "23", icon: Package, change: "-5.2%" },
-  { title: "Average Order", value: "₹1,890.20", icon: ShoppingCart, change: "+2.3%" },
-  { title: "Vendors", value: "156", icon: Users2, change: "+12.0%" },
-]
+import { Purchase } from "@/lib/db"
 
 export default function PurchasesPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
-  const { db } = useDB();
+  const { db, getAll } = useDB();
+  const [purchases, setPurchases] = useState<Purchase[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [suppliers, setSuppliers] = useState<string[]>([])
+  const [statistics, setStatistics] = useState([
+    { title: "Total Purchases", value: "₹0.00", icon: FileText, change: "0%" },
+    { title: "Active Suppliers", value: "0", icon: Building2, change: "0" },
+    { title: "Pending Orders", value: "0", icon: Clock, change: "0" },
+    { title: "Avg. Turnaround", value: "0 days", icon: Truck, change: "0 days" }
+  ])
 
   // One-time cleanup for dummy data
   useEffect(() => {
@@ -128,6 +40,79 @@ export default function PurchasesPage() {
     
     cleanupDummyData();
   }, [db]);
+
+  // Fetch actual purchase data from the database
+  useEffect(() => {
+    const fetchPurchaseData = async () => {
+      setIsLoading(true);
+      try {
+        // Get purchases from database
+        const purchasesData = await getAll<Purchase>('purchases');
+        setPurchases(purchasesData);
+        
+        // Extract unique suppliers
+        const uniqueSuppliers = [...new Set(purchasesData.map(p => p.supplier))];
+        setSuppliers(uniqueSuppliers);
+        
+        // Calculate statistics
+        if (purchasesData.length > 0) {
+          const totalAmount = purchasesData.reduce((sum, item) => sum + item.cost, 0);
+          setStatistics([
+            { 
+              title: "Total Purchases", 
+              value: `₹${totalAmount.toFixed(2)}`, 
+              icon: FileText, 
+              change: "0%" 
+            },
+            { 
+              title: "Active Suppliers", 
+              value: uniqueSuppliers.length.toString(), 
+              icon: Building2, 
+              change: "0" 
+            },
+            { 
+              title: "Pending Orders", 
+              value: "0", 
+              icon: Clock, 
+              change: "0" 
+            },
+            { 
+              title: "Avg. Turnaround", 
+              value: "0 days", 
+              icon: Truck, 
+              change: "0 days" 
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching purchase data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPurchaseData();
+  }, [getAll]);
+
+  // Format purchase data for recent activity
+  const formatRecentPurchases = () => {
+    return purchases
+      .sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB.getTime() - dateA.getTime(); // Sort descending (newest first)
+      })
+      .slice(0, 5) // Take only the 5 most recent
+      .map(purchase => ({
+        id: purchase.id || "",
+        supplier: purchase.supplier,
+        date: purchase.date instanceof Date 
+          ? purchase.date.toISOString().split('T')[0] 
+          : new Date(purchase.date).toISOString().split('T')[0],
+        amount: purchase.cost,
+        status: "received" // Default status since we don't track this yet
+      }));
+  };
 
   return (
     <div className="space-y-6">
@@ -174,7 +159,15 @@ export default function PurchasesPage() {
                 <CardDescription>Overview of your recent purchase transactions</CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentActivity purchases={recentPurchases} />
+                {isLoading ? (
+                  <div className="py-8 text-center text-muted-foreground">Loading purchase data...</div>
+                ) : purchases.length > 0 ? (
+                  <RecentActivity purchases={formatRecentPurchases()} />
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No purchase data available. Add your first purchase invoice to get started.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -187,9 +180,9 @@ export default function PurchasesPage() {
               <CardContent className="grid gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button variant="outline" className="justify-start" asChild>
-                    <Link href="/inventory">
+                    <Link href="/stock">
                       <Package className="mr-2 h-4 w-4" />
-                      View Inventory
+                      View Stock
                     </Link>
                   </Button>
                   <Button variant="outline" className="justify-start" asChild>
@@ -199,9 +192,9 @@ export default function PurchasesPage() {
                     </Link>
                   </Button>
                   <Button variant="outline" className="justify-start" asChild>
-                    <Link href="/inventory/add">
+                    <Link href="/stock/add">
                       <PlusSquare className="mr-2 h-4 w-4" />
-                      Add Inventory Item
+                      Add Stock Item
                     </Link>
                   </Button>
                   <Button variant="outline" className="justify-start" asChild>
@@ -220,24 +213,38 @@ export default function PurchasesPage() {
                 <DateRangePicker />
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Purchases</p>
-                    <p className="text-2xl font-bold">₹78,594.50</p>
+                {isLoading ? (
+                  <div className="py-4 text-center text-muted-foreground">Loading summary...</div>
+                ) : purchases.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">Total Purchases</p>
+                      <p className="text-2xl font-bold">
+                        ₹{purchases.reduce((sum, item) => sum + item.cost, 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">Invoices Processed</p>
+                      <p className="text-2xl font-bold">{purchases.length}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">Avg. Invoice Value</p>
+                      <p className="text-2xl font-bold">
+                        ₹{(purchases.reduce((sum, item) => sum + item.cost, 0) / (purchases.length || 1)).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">Top Supplier</p>
+                      <p className="text-2xl font-bold">
+                        {suppliers.length > 0 ? suppliers[0] : 'None'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Invoices Processed</p>
-                    <p className="text-2xl font-bold">128</p>
+                ) : (
+                  <div className="py-4 text-center text-muted-foreground">
+                    No purchase data available
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Avg. Invoice Value</p>
-                    <p className="text-2xl font-bold">₹614.02</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Top Supplier</p>
-                    <p className="text-2xl font-bold">Office Supplies Inc.</p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -248,7 +255,7 @@ export default function PurchasesPage() {
         </TabsContent>
 
         <TabsContent value="suppliers">
-          <SuppliersList suppliers={suppliers} />
+          <SuppliersList />
         </TabsContent>
       </Tabs>
     </div>
