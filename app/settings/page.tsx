@@ -16,26 +16,11 @@ import { Laptop, Smartphone, Tablet } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
-const defaultAvatars = [
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/9439775.jpg-4JVJWOjPksd3DtnBYJXoWHA5lc1DU9.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/375238645_11475210.jpg-lU8bOe6TLt5Rv51hgjg8NT8PsDBmvN.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/375238208_11475222.jpg-poEIzVHAGiIfMFQ7EiF8PUG1u0Zkzz.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/dd.jpg-4MCwPC2Bec6Ume26Yo1kao3CnONxDg.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/9334178.jpg-Y74tW6XFO68g7N36SE5MSNDNVKLQ08.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5295.jpg-fLw0wGGZp8wuTzU5dnyfjZDwAHN98a.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/9720029.jpg-Yf9h2a3kT7rYyCb648iLIeHThq5wEy.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/27470341_7294795.jpg-XE0zf7R8tk4rfA1vm4fAHeZ1QoVEOo.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/799.jpg-0tEi4Xvg5YsFoGoQfQc698q4Dygl1S.jpeg",
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/9334228.jpg-eOsHCkvVrVAwcPHKYSs5sQwVKsqWpC.jpeg",
-]
-
 export default function SettingsPage() {
-  const { settings, updateSettings, updateNotificationSettings, updatePrivacySettings, updateFirmDetails, updateInvoiceTemplates } = useSettings()
-  const [selectedAvatar, setSelectedAvatar] = useState(settings.avatar)
+  const { settings, updateSettings, updateNotificationSettings, updateFirmDetails, updateInvoiceTemplates } = useSettings()
 
   const handleSaveAccount = () => {
     updateSettings({
-      avatar: selectedAvatar,
       fullName: settings.fullName,
       email: settings.email,
       phone: settings.phone,
@@ -49,11 +34,6 @@ export default function SettingsPage() {
     toast.success("Notification settings saved successfully")
   }
 
-  const handleSavePrivacy = () => {
-    updatePrivacySettings(settings.privacy)
-    toast.success("Privacy settings saved successfully")
-  }
-
   const handleSaveInvoiceTemplate = (templateId: string) => {
     updateInvoiceTemplates({
       activeTemplate: templateId
@@ -65,14 +45,11 @@ export default function SettingsPage() {
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="firm-details">Firm Details</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
@@ -83,36 +60,36 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <Label>Current Avatar</Label>
+                <Label htmlFor="profile-photo">Upload Profile Photo</Label>
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={selectedAvatar} alt={settings.fullName} />
-                    <AvatarFallback>
-                      {settings.fullName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
+                    {settings.profilePhoto ? (
+                      <AvatarImage src={settings.profilePhoto} alt={settings.fullName} />
+                    ) : (
+                      <AvatarFallback>
+                        {settings.fullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
-                </div>
-                <Label>Choose a new avatar</Label>
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {defaultAvatars.map((avatar, index) => (
-                    <Avatar
-                      key={index}
-                      className={`h-20 w-20 rounded-lg cursor-pointer hover:ring-2 hover:ring-primary shrink-0 ${
-                        selectedAvatar === avatar ? "ring-2 ring-primary" : ""
-                      }`}
-                      onClick={() => setSelectedAvatar(avatar)}
-                    >
-                      <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} className="object-cover" />
-                      <AvatarFallback>{index + 1}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                </div>
-                <div>
-                  <Label htmlFor="custom-avatar">Or upload a custom avatar</Label>
-                  <Input id="custom-avatar" type="file" accept="image/*" className="mt-1" />
+                  <Input 
+                    id="profile-photo" 
+                    type="file" 
+                    accept="image/*" 
+                    className="max-w-xs"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          updateSettings({ profilePhoto: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -363,179 +340,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="security">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your account's security settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="two-factor" />
-                  <Label htmlFor="two-factor">Enable Two-Factor Authentication</Label>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Save Security Settings</Button>
-              </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Login History</CardTitle>
-                <CardDescription>Recent login activities on your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { date: "2023-07-20", time: "14:30 UTC", ip: "192.168.1.1", location: "New York, USA" },
-                  { date: "2023-07-19", time: "09:15 UTC", ip: "10.0.0.1", location: "London, UK" },
-                  { date: "2023-07-18", time: "22:45 UTC", ip: "172.16.0.1", location: "Tokyo, Japan" },
-                ].map((login, index) => (
-                  <div key={index} className="flex justify-between items-center text-sm">
-                    <span>
-                      {login.date} {login.time}
-                    </span>
-                    <span>{login.ip}</span>
-                    <span>{login.location}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Sessions</CardTitle>
-                <CardDescription>Currently active sessions on your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { device: "Laptop", browser: "Chrome", os: "Windows 10", icon: Laptop },
-                  { device: "Smartphone", browser: "Safari", os: "iOS 15", icon: Smartphone },
-                  { device: "Tablet", browser: "Firefox", os: "Android 12", icon: Tablet },
-                ].map((session, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <span className="flex items-center">
-                      <session.icon className="mr-2 h-4 w-4" />
-                      {session.device}
-                    </span>
-                    <span>{session.browser}</span>
-                    <span>{session.os}</span>
-                  </div>
-                ))}
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline">Log Out All Other Sessions</Button>
-              </CardFooter>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="preferences">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-              <CardDescription>Customize your dashboard experience</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
-                  <Select defaultValue="en">
-                    <SelectTrigger id="language">
-                      <SelectValue placeholder="Select Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="de">Deutsch</SelectItem>
-                      <SelectItem value="zh">中文</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select defaultValue="inr" disabled>
-                    <SelectTrigger id="currency">
-                      <SelectValue placeholder="INR (₹)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inr">INR (₹)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date-format">Date Format</Label>
-                  <Select defaultValue="mm-dd-yyyy">
-                    <SelectTrigger id="date-format">
-                      <SelectValue placeholder="Select Date Format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mm-dd-yyyy">MM-DD-YYYY</SelectItem>
-                      <SelectItem value="dd-mm-yyyy">DD-MM-YYYY</SelectItem>
-                      <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="font-size">Font Size</Label>
-                  <Slider defaultValue={[16]} max={24} min={12} step={1} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Theme</Label>
-                <RadioGroup defaultValue="system">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="light" id="theme-light" />
-                    <Label htmlFor="theme-light">Light</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dark" id="theme-dark" />
-                    <Label htmlFor="theme-dark">Dark</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="system" id="theme-system" />
-                    <Label htmlFor="theme-system">System</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              <div className="space-y-2">
-                <Label>Dashboard Layout</Label>
-                <RadioGroup defaultValue="default">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="default" id="layout-default" />
-                    <Label htmlFor="layout-default">Default</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="compact" id="layout-compact" />
-                    <Label htmlFor="layout-compact">Compact</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="expanded" id="layout-expanded" />
-                    <Label htmlFor="layout-expanded">Expanded</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save Preferences</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
@@ -640,109 +444,6 @@ export default function SettingsPage() {
             </CardContent>
             <CardFooter>
               <Button onClick={handleSaveNotifications}>Save Notification Settings</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="privacy">
-          <Card>
-            <CardHeader>
-              <CardTitle>Privacy Settings</CardTitle>
-              <CardDescription>Manage your privacy and data settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Data Sharing</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="analytics-sharing">Share analytics data</Label>
-                      <Switch
-                        id="analytics-sharing"
-                        checked={settings.privacy.analyticsSharing}
-                        onCheckedChange={(checked) =>
-                          updatePrivacySettings({ analyticsSharing: checked })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="personalized-ads">Allow personalized ads</Label>
-                      <Switch
-                        id="personalized-ads"
-                        checked={settings.privacy.personalizedAds}
-                        onCheckedChange={(checked) =>
-                          updatePrivacySettings({ personalizedAds: checked })
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Account Visibility</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RadioGroup
-                      value={settings.privacy.visibility}
-                      onValueChange={(value: "public" | "private") => 
-                        updatePrivacySettings({ visibility: value })
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="public" id="visibility-public" />
-                        <Label htmlFor="visibility-public">Public</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="private" id="visibility-private" />
-                        <Label htmlFor="visibility-private">Private</Label>
-                      </div>
-                    </RadioGroup>
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Data Retention</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select
-                      value={settings.privacy.dataRetention}
-                      onValueChange={(value: "6-months" | "1-year" | "2-years" | "indefinite") => 
-                        updatePrivacySettings({ dataRetention: value })
-                      }
-                    >
-                      <SelectTrigger id="data-retention">
-                        <SelectValue placeholder="Select Data Retention Period" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6-months">6 Months</SelectItem>
-                        <SelectItem value="1-year">1 Year</SelectItem>
-                        <SelectItem value="2-years">2 Years</SelectItem>
-                        <SelectItem value="indefinite">Indefinite</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Third-Party Integrations</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Connected: Google Analytics, Facebook Pixel</p>
-                    <Button variant="outline">Manage Integrations</Button>
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="flex justify-between">
-                <Button variant="outline">Download Your Data</Button>
-                <Button variant="destructive">Delete My Account</Button>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSavePrivacy}>Save Privacy Settings</Button>
             </CardFooter>
           </Card>
         </TabsContent>

@@ -39,17 +39,47 @@ import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { cleanupDuplicateMasters } from "@/lib/initializers"
 
 export default function MastersPage() {
   const [activeTab, setActiveTab] = useState("category")
   const [masters, setMasters] = useState<Master[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
-  const { getAll, add, update, remove, db } = useDB()
+  const { getAll, add, update, remove, appDB } = useDB()
   
   // New master form state
   const [newMasterValue, setNewMasterValue] = useState("")
   const [editingMaster, setEditingMaster] = useState<Master | null>(null)
+
+  // One-time cleanup of duplicate masters
+  useEffect(() => {
+    const cleanup = async () => {
+      try {
+        // Force a complete refresh of masters data
+        setLoading(true);
+        await cleanupDuplicateMasters();
+        
+        // Re-fetch masters for the current tab
+        if (getAll) {
+          const allMasters = await getAll<Master>('masters');
+          const uniqueMasters = allMasters
+            .filter(master => master.type === activeTab)
+            .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          
+          setMasters(uniqueMasters);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error cleaning up duplicates:", error);
+        setLoading(false);
+      }
+    };
+    
+    cleanup();
+    // Only run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Master types for tabs
   const masterTypes = [
@@ -87,11 +117,29 @@ export default function MastersPage() {
         
         // Only update state if component is still mounted
         if (isMounted) {
-          const filteredMasters = allMasters.filter(
+          // First filter by the active tab
+          const filteredByType = allMasters.filter(
             master => master.type === activeTab
-          ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+          );
           
-          setMasters(filteredMasters)
+          // Then remove any duplicates (keep first occurrence based on displayOrder)
+          const uniqueValues = new Map<string, Master>();
+          
+          // Sort by displayOrder to prioritize keeping items with lower displayOrder
+          filteredByType
+            .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+            .forEach(master => {
+              const key = master.value.toLowerCase();
+              if (!uniqueValues.has(key)) {
+                uniqueValues.set(key, master);
+              }
+            });
+          
+          // Convert map values back to array and sort by displayOrder
+          const finalMasters = Array.from(uniqueValues.values())
+            .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          
+          setMasters(finalMasters)
           setLoading(false)
         }
       } catch (error) {
@@ -140,36 +188,42 @@ export default function MastersPage() {
     }
   }
 
-  // Load the label configuration when the component mounts
-  useEffect(() => {
+  // Function to load saved label configuration
+  const loadLabelConfiguration = () => {
     try {
-      // Try to load saved configuration from localStorage
-      const savedConfig = localStorage.getItem('labelConfig');
-      
-      if (savedConfig) {
-        const config = JSON.parse(savedConfig);
-        
-        // Update state with saved configuration
-        setLabelType(config.labelType || 'standard');
-        setLabelQuantity(config.labelQuantity || '1');
-        setIncludeProductName(config.includeProductName !== undefined ? config.includeProductName : true);
-        setIncludePrice(config.includePrice !== undefined ? config.includePrice : true);
-        setIncludeBarcode(config.includeBarcode !== undefined ? config.includeBarcode : true);
-        setIncludeDate(config.includeDate !== undefined ? config.includeDate : true);
-        setIncludeQr(config.includeQr !== undefined ? config.includeQr : true);
-        setIncludeMetal(config.includeMetal !== undefined ? config.includeMetal : true);
-        setIncludePurity(config.includePurity !== undefined ? config.includePurity : true);
-        setIncludeWeight(config.includeWeight !== undefined ? config.includeWeight : true);
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('labelConfig');
+        if (savedConfig) {
+          const config = JSON.parse(savedConfig);
+          
+          // Set all state values from the config
+          setLabelType(config.labelType || 'standard');
+          setLabelQuantity(config.labelQuantity || '1');
+          setIncludeProductName(config.includeProductName ?? true);
+          setIncludePrice(config.includePrice ?? true);
+          setIncludeBarcode(config.includeBarcode ?? true);
+          setIncludeDate(config.includeDate ?? true);
+          setIncludeQr(config.includeQr ?? true);
+          setIncludeMetal(config.includeMetal ?? true);
+          setIncludePurity(config.includePurity ?? true);
+          setIncludeWeight(config.includeWeight ?? true);
+        }
       }
     } catch (error) {
       console.error("Error loading label configuration:", error);
     }
-  }, []);
+  }
 
-  // Filter masters based on search query
-  const filteredMasters = masters.filter(master => 
-    master.value.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Load label config on mount
+  useEffect(() => {
+    loadLabelConfiguration();
+  }, []);
+  
+  // Helper function to get label for the active tab
+  const getTabLabel = (tabId: string) => {
+    const tab = masterTypes.find(t => t.id === tabId)
+    return tab ? tab.label : tabId
+  }
 
   // Handle adding a new master
   const handleAddMaster = async () => {
@@ -191,7 +245,7 @@ export default function MastersPage() {
     try {
       // Create a new master record with all required fields
       const newMaster: Master = {
-        id: db.generateId('MSTR'), // Explicitly generate the ID
+        id: appDB.generateId('MSTR'), // Explicitly generate the ID
         type: activeTab,
         value: newMasterValue.trim(),
         isActive: true,
@@ -213,25 +267,47 @@ export default function MastersPage() {
     }
   }
 
-  // Handle updating a master's active status
-  const handleToggleStatus = async (master: Master) => {
+  // Handle deleting a master
+  const handleDeleteMaster = async (master: Master) => {
+    // Don't allow deleting if there's no ID
     if (!master.id) {
-      toast.error("Cannot update: Item has no ID")
+      toast.error("Cannot delete master: Missing ID")
       return
     }
 
     try {
-      // Create updated master object with toggled status
+      // First remove from database
+      await remove('masters', master.id)
+      
+      // Then update UI
+      setMasters(prev => prev.filter(m => m.id !== master.id))
+      toast.success(`${master.value} deleted successfully`)
+    } catch (error) {
+      console.error(`Error deleting ${activeTab}:`, error)
+      toast.error(`Failed to delete ${master.value}. ${error instanceof Error ? error.message : ''}`)
+    }
+  }
+
+  // Handle toggling a master's status
+  const handleToggleStatus = async (master: Master) => {
+    // Don't allow toggling if there's no ID
+    if (!master.id) {
+      toast.error("Cannot update master: Missing ID")
+      return
+    }
+
+    try {
+      // Create updated version
       const updatedMaster = { 
         ...master, 
-        isActive: !master.isActive, 
-        updatedAt: new Date() 
+        isActive: !master.isActive,
+        updatedAt: new Date()
       }
       
-      // First update in the database
+      // First update the database
       await update('masters', master.id, { 
-        isActive: !master.isActive, 
-        updatedAt: new Date() 
+        isActive: !master.isActive,
+        updatedAt: new Date()
       })
       
       // Then update the UI
@@ -239,10 +315,10 @@ export default function MastersPage() {
         m.id === master.id ? updatedMaster : m
       ))
       
-      toast.success(`${master.value} ${updatedMaster.isActive ? 'activated' : 'deactivated'} successfully`)
+      toast.success(`${master.value} ${updatedMaster.isActive ? 'activated' : 'deactivated'}`)
     } catch (error) {
-      console.error(`Error updating status for ${activeTab}:`, error)
-      toast.error(`Failed to update ${master.value} status. ${error instanceof Error ? error.message : ''}`)
+      console.error(`Error updating ${activeTab}:`, error)
+      toast.error(`Failed to update ${master.value}. ${error instanceof Error ? error.message : ''}`)
     }
   }
 
@@ -293,65 +369,11 @@ export default function MastersPage() {
     }
   }
 
-  // Handle deleting a master
-  const handleDeleteMaster = async (master: Master) => {
-    if (!window.confirm(`Are you sure you want to delete ${master.value}?`)) {
-      return
-    }
-
-    if (!master.id) {
-      toast.error("Cannot delete: Item has no ID")
-      return
-    }
-
-    try {
-      // First delete from database
-      await remove('masters', master.id)
-      
-      // Then update the UI
-      setMasters(prev => prev.filter(m => m.id !== master.id))
-      toast.success(`${master.value} deleted successfully`)
-    } catch (error) {
-      console.error(`Error deleting ${activeTab}:`, error)
-      toast.error(`Failed to delete ${master.value}. ${error instanceof Error ? error.message : ''}`)
-    }
-  }
-
-  // Function to seed jewelry-specific masters
-  const seedJewelryMasters = async () => {
-    try {
-      await db.seedJewelryMasters()
-      toast.success("Jewelry-specific categories, metals, and purity values added successfully!")
-      // Refresh the masters list
-      setActiveTab("category") // First show categories
-      const refreshedMasters = await getAll<Master>('masters')
-      const filteredMasters = refreshedMasters.filter(
-        master => master.type === "category"
-      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-      setMasters(filteredMasters)
-    } catch (error) {
-      console.error("Error seeding jewelry masters:", error)
-      toast.error("Failed to add jewelry masters")
-    }
-  }
-
-  // Function to clean up masters data (remove duplicates and unwanted categories)
-  const cleanupMastersData = async () => {
-    try {
-      await db.cleanupMastersData();
-      toast.success("Removed duplicate entries and cleaned up categories!");
-      
-      // Refresh the masters list
-      const refreshedMasters = await getAll<Master>('masters')
-      const filteredMasters = refreshedMasters.filter(
-        master => master.type === activeTab
-      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-      setMasters(filteredMasters)
-    } catch (error) {
-      console.error("Error cleaning up masters data:", error)
-      toast.error("Failed to clean up masters data")
-    }
-  }
+  // Function to filter masters based on search query
+  const filteredMasters = searchQuery 
+    ? masters.filter(master => 
+        master.value.toLowerCase().includes(searchQuery.toLowerCase()))
+    : masters
 
   return (
     <div className="p-6 space-y-6">
@@ -362,24 +384,7 @@ export default function MastersPage() {
             Define and manage dropdown values used throughout the application
           </p>
         </div>
-        
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
-            onClick={cleanupMastersData}
-          >
-            <Trash2 className="mr-2 h-4 w-4" /> Remove Duplicates
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700"
-            onClick={seedJewelryMasters}
-          >
-            <Sparkles className="mr-2 h-4 w-4" /> Add Jewelry Masters
-          </Button>
-          
+        <div className="flex flex-wrap gap-2">
           <Dialog>
             <DialogTrigger asChild>
               <Button>
@@ -390,26 +395,23 @@ export default function MastersPage() {
               <DialogHeader>
                 <DialogTitle>Add New {getTabLabel(activeTab)}</DialogTitle>
                 <DialogDescription>
-                  Enter a value for the new {activeTab}.
+                  Enter a value for the new {activeTab}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4">
-                <Label htmlFor="name">Value</Label>
+                <Label htmlFor="new-value">Value</Label>
                 <Input 
-                  id="name" 
+                  id="new-value" 
                   value={newMasterValue} 
                   onChange={(e) => setNewMasterValue(e.target.value)}
                   placeholder={`Enter ${activeTab} value...`}
-                  className="mt-2"
                 />
               </div>
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                  <Button onClick={handleAddMaster}>Add {getTabLabel(activeTab)}</Button>
-                </DialogClose>
+                <Button variant="outline" onClick={() => setNewMasterValue("")}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMaster}>Add</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -714,19 +716,4 @@ export default function MastersPage() {
       </Dialog>
     </div>
   )
-}
-
-// Helper to get the label for a tab
-function getTabLabel(tabId: string): string {
-  const labels: Record<string, string> = {
-    category: "Category",
-    status: "Status",
-    payment_method: "Payment Method",
-    unit: "Unit",
-    purity: "Purity",
-    metal: "Metal",
-    label_config: "Label Configuration"
-  }
-  
-  return labels[tabId] || tabId.charAt(0).toUpperCase() + tabId.slice(1)
 } 

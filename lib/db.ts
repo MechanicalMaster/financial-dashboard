@@ -1,6 +1,6 @@
 import Dexie, { Table } from 'dexie';
 
-// Define interfaces for each table
+// Define interfaces for each table - User data tables
 export interface User {
   id?: string;
   phone: string;
@@ -57,11 +57,20 @@ export interface OldStockItem {
 export interface Invoice {
   id?: string;
   customerId: string;
+  customerName?: string;
+  customerMobile?: string;
+  customerAddress?: string;
   type: 'invoice' | 'booking';
   date: Date;
   dueDate?: Date;
   bookingDate?: Date;
+  items?: any[];
+  subtotal?: number;
+  igst?: number;
+  cgst?: number;
   amount: number;
+  notes?: string;
+  paymentTerms?: string;
   status: 'paid' | 'unpaid' | 'overdue' | 'booking';
   createdAt: Date;
   updatedAt: Date;
@@ -81,7 +90,7 @@ export interface Purchase {
 
 export interface Settings {
   id: string;
-  avatar: string;
+  profilePhoto: string;
   fullName: string;
   email: string;
   phone: string;
@@ -115,11 +124,8 @@ export interface Settings {
     quietHoursStart: string;
     quietHoursEnd: string;
   };
-  privacy: {
-    analyticsSharing: boolean;
-    personalizedAds: boolean;
-    visibility: string;
-    dataRetention: string;
+  invoiceTemplates?: {
+    activeTemplate: string;
   };
   updatedAt: Date;
 }
@@ -131,6 +137,7 @@ export interface Analytics {
   timestamp: Date;
 }
 
+// App data interfaces
 export interface Master {
   id?: string;
   type: string; // category, supplier, status, etc.
@@ -141,8 +148,8 @@ export interface Master {
   updatedAt: Date;
 }
 
-// Define the database class
-export class InventoryDB extends Dexie {
+// Define the User database class (for user-specific data)
+export class UserDB extends Dexie {
   users!: Table<User, string>;
   customers!: Table<Customer, string>;
   inventory!: Table<InventoryItem, string>;
@@ -151,392 +158,88 @@ export class InventoryDB extends Dexie {
   purchases!: Table<Purchase, string>;
   settings!: Table<Settings, string>;
   analytics!: Table<Analytics, string>;
-  masters!: Table<Master, string>;
 
   constructor() {
-    super('InventoryDB');
+    super('UserDB');
     
-    // Version 1: Base schema
+    // Version 1: User data schema
     this.version(1).stores({
       users: 'id, phone',
       customers: 'id, name, email, phone',
       inventory: 'id, name, category, supplier',
+      oldStock: 'id, name, category, status, purchaseDate, customerName',
       invoices: 'id, customerId, type, status',
       purchases: 'id, itemId, supplier',
       settings: 'id',
       analytics: 'id, type'
     });
-    
-    // Version 2: Add masters table
-    this.version(2).stores({
-      masters: 'id, type, value, isActive, displayOrder'
-    }).upgrade(tx => {
-      console.log("Upgrading to version 2 - adding masters table");
-      
-      // Define the initial master data
-      const initialMasters = [
-        // Categories
-        {
-          id: this.generateId('MSTR'),
-          type: 'category',
-          value: 'Furniture',
-          isActive: true,
-          displayOrder: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: this.generateId('MSTR'),
-          type: 'category',
-          value: 'Electronics',
-          isActive: true,
-          displayOrder: 2,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: this.generateId('MSTR'),
-          type: 'category',
-          value: 'Office Supplies',
-          isActive: true,
-          displayOrder: 3,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: this.generateId('MSTR'),
-          type: 'category',
-          value: 'Stationery',
-          isActive: true,
-          displayOrder: 4,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        
-        // Suppliers
-        {
-          id: this.generateId('MSTR'),
-          type: 'supplier',
-          value: 'SupplyCo',
-          isActive: true,
-          displayOrder: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: this.generateId('MSTR'),
-          type: 'supplier',
-          value: 'TechSuppliers',
-          isActive: true,
-          displayOrder: 2,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      ];
-      
-      // Add to the masters table in this transaction
-      return Promise.all(initialMasters.map(master => 
-        // @ts-ignore - Dexie allows dynamic table access in transactions
-        tx.table('masters').add(master)
-      ));
-    });
-    
-    // Version 3: Add oldStock table
-    this.version(3).stores({
-      oldStock: 'id, name, category, status, purchaseDate, customerName'
-    }).upgrade(tx => {
-      console.log("Upgrading to version 3 - adding oldStock table");
-    });
   }
 
-  // Helper method to generate IDs for different tables
+  // Generate ID helper function
   generateId(prefix: string): string {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 1000);
-    return `${prefix}-${timestamp}-${random}`;
+    // Use timestamp + random number to ensure uniqueness
+    const timestamp = new Date().getTime().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `${prefix}-${timestamp}-${randomStr}`;
   }
 
-  // Method to seed initial data for basic tables (masters are handled by schema version upgrade)
+  // Initial seed data for settings
   async seedInitialData() {
     try {
-      const customerCount = await this.customers.count();
-      const inventoryCount = await this.inventory.count();
+      // Check if there's already a settings record
       const settingsCount = await this.settings.count();
       
-      // Check if settings need to be reset (wrong firm name)
-      await this.resetSettingsIfNeeded();
-      
-      // Remove customer seeding - we don't want dummy customer data
-      
-      // Remove inventory seeding - we don't want dummy inventory data
-      
       if (settingsCount === 0) {
-        // Seed settings
+        // Create initial settings with minimal default values (no dummy data)
         const defaultSettings: Settings = {
-          id: 'default-user-id',
-          avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
-          fullName: "Dollar Singh",
-          email: "dollar.singh@example.com",
-          phone: "+1 (555) 123-4567",
-          timezone: "utc-8",
-          language: "en",
-          currency: "usd",
-          dateFormat: "MM/DD/YYYY",
+          id: 'app-settings',
+          profilePhoto: '',
+          fullName: '',
+          email: '',
+          phone: '',
+          timezone: 'Asia/Kolkata',
+          language: 'en',
+          currency: 'INR',
+          dateFormat: 'DD/MM/YYYY',
           fontSize: 16,
-          theme: "system",
-          layout: "default",
+          theme: 'light',
+          layout: 'default',
           firmDetails: {
-            firmName: "Kuber",
-            firmLogo: "/logo.png",
-            address: "123 Business Park, Mumbai, India",
-            phoneNumber: "+91 98765 43210",
-            gstInNumber: "27AADCB2230M1ZT",
-            dateOfEstablishment: "2010-01-15",
-            constitution: "Proprietorship",
-            authToken: "abc123xyz456",
-            email: "info@kuber.com",
-            website: "https://www.kuber.com"
+            firmName: '',
+            firmLogo: '',
+            address: '',
+            phoneNumber: '',
+            gstInNumber: '',
+            dateOfEstablishment: '',
+            constitution: '',
+            authToken: '',
+            email: '',
+            website: ''
           },
           notifications: {
             email: true,
             push: true,
-            sms: false,
+            sms: true,
             accountActivity: true,
             newFeatures: true,
             marketing: false,
-            frequency: "daily",
-            quietHoursStart: "22:00",
-            quietHoursEnd: "08:00"
+            frequency: 'daily',
+            quietHoursStart: '22:00',
+            quietHoursEnd: '08:00'
           },
-          privacy: {
-            analyticsSharing: true,
-            personalizedAds: false,
-            visibility: "public",
-            dataRetention: "1-year"
+          invoiceTemplates: {
+            activeTemplate: 'default'
           },
           updatedAt: new Date()
         };
         
         await this.settings.add(defaultSettings);
-        console.log('Initial settings data seeded');
-      }
-      
-      // Clean up existing customer data
-      await this.cleanupCustomerData();
-      
-      // Clean up existing inventory data
-      await this.cleanupInventoryData();
-      
-      // Clean up existing purchase data
-      await this.cleanupPurchaseData();
-      
-      // Seed jewelry-specific masters
-      await this.seedJewelryMasters();
-      
-      // Clean up duplicates and unwanted categories
-      await this.cleanupMastersData();
-      
-      // Ensure no sample invoices
-      await this.ensureNoSampleInvoices();
-      
-      console.log('Database initialization completed');
-    } catch (error) {
-      console.error('Error seeding initial data:', error);
-      throw error;
-    }
-  }
-  
-  // Helper to reset settings if they have the wrong firm name
-  async resetSettingsIfNeeded() {
-    try {
-      const existingSettings = await this.settings.get('default-user-id');
-      
-      // If settings exist but have the wrong firm name, reset them
-      if (existingSettings && existingSettings.firmDetails.firmName !== "Kuber") {
-        console.log(`Resetting settings: Found "${existingSettings.firmDetails.firmName}" instead of "Kuber"`);
-        
-        // Update the firm name
-        await this.settings.update('default-user-id', {
-          firmDetails: {
-            ...existingSettings.firmDetails,
-            firmName: "Kuber"
-          },
-          updatedAt: new Date()
-        });
-        
-        console.log('Settings reset completed: Firm name updated to "Kuber"');
-      }
-    } catch (error) {
-      console.error('Error resetting settings:', error);
-    }
-  }
-  
-  // Helper method to seed jewelry-specific master data
-  async seedJewelryMasters() {
-    try {
-      // Define the jewelry categories to add
-      const jewelryCategories = [
-        "Chain", "Necklace", "Ladies Ring", "Gents Ring", "Jhumka", 
-        "Bangles", "Mangalsutra", "Bali", "Tops", "Coins"
-      ];
-      
-      // Define the metal types to add
-      const metalTypes = [
-        "Gold", "Silver", "Platinum", "Rhodium", "Others"
-      ];
-      
-      // Define the purity values to add
-      const purityValues = [
-        "916", "750", "925", "850", "825", "OTH"
-      ];
-      
-      // Get existing categories, metals and purity values to avoid duplicates
-      const existingCategories = (await this.masters.where('type').equals('category').toArray()).map(m => m.value.toLowerCase());
-      const existingMetals = (await this.masters.where('type').equals('metal').toArray()).map(m => m.value.toLowerCase());
-      const existingPurities = (await this.masters.where('type').equals('purity').toArray()).map(m => m.value.toLowerCase());
-      
-      // Prepare arrays to hold new entries
-      const categoriesToAdd = [];
-      const metalsToAdd = [];
-      const puritiesToAdd = [];
-      
-      // Check and add categories
-      for (let [index, category] of jewelryCategories.entries()) {
-        if (!existingCategories.includes(category.toLowerCase())) {
-          categoriesToAdd.push({
-            id: this.generateId('MSTR'),
-            type: 'category',
-            value: category,
-            isActive: true,
-            displayOrder: existingCategories.length + index + 1,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
-      }
-      
-      // Check and add metals
-      for (let [index, metal] of metalTypes.entries()) {
-        if (!existingMetals.includes(metal.toLowerCase())) {
-          metalsToAdd.push({
-            id: this.generateId('MSTR'),
-            type: 'metal',
-            value: metal,
-            isActive: true,
-            displayOrder: existingMetals.length + index + 1,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
-      }
-      
-      // Check and add purity values
-      for (let [index, purity] of purityValues.entries()) {
-        if (!existingPurities.includes(purity.toLowerCase())) {
-          puritiesToAdd.push({
-            id: this.generateId('MSTR'),
-            type: 'purity',
-            value: purity,
-            isActive: true,
-            displayOrder: existingPurities.length + index + 1,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
-      }
-      
-      // Combine all new masters to add
-      const allNewMasters = [...categoriesToAdd, ...metalsToAdd, ...puritiesToAdd];
-      
-      // Add them to the database if there are any
-      if (allNewMasters.length > 0) {
-        await this.masters.bulkAdd(allNewMasters);
-        console.log(`Added ${categoriesToAdd.length} categories, ${metalsToAdd.length} metals, and ${puritiesToAdd.length} purity values.`);
-      } else {
-        console.log('No new jewelry masters needed to be added.');
-      }
-    } catch (error) {
-      console.error('Error seeding jewelry masters:', error);
-    }
-  }
-  
-  // Helper to get masters by type
-  async getMastersByType(type: string): Promise<Master[]> {
-    console.log(`[InventoryDB] getMastersByType called with type: ${type}`)
-    try {
-      const results = await this.masters
-        .where('type')
-        .equals(type)
-        .and(item => item.isActive)
-        .sortBy('displayOrder');
-      
-      console.log(`[InventoryDB] Found ${results.length} ${type} items:`, results)
-      return results
-    } catch (error) {
-      console.error(`[InventoryDB] Error in getMastersByType:`, error)
-      return []
-    }
-  }
-
-  // Helper method to remove duplicates and clean up categories
-  async cleanupMastersData() {
-    try {
-      // Get all masters
-      const allMasters = await this.masters.toArray();
-      
-      // Keep track of seen values by type to identify duplicates
-      const seenValues: Record<string, Set<string>> = {};
-      const duplicateIds: string[] = [];
-      
-      // Identify duplicates
-      allMasters.forEach(master => {
-        if (!seenValues[master.type]) {
-          seenValues[master.type] = new Set();
-        }
-        
-        const lowerValue = master.value.toLowerCase();
-        if (seenValues[master.type].has(lowerValue)) {
-          // This is a duplicate
-          if (master.id) {
-            duplicateIds.push(master.id);
-          }
-        } else {
-          seenValues[master.type].add(lowerValue);
-        }
-      });
-      
-      // Remove duplicates if found
-      if (duplicateIds.length > 0) {
-        await this.masters.bulkDelete(duplicateIds);
-        console.log(`Removed ${duplicateIds.length} duplicate masters`);
-      }
-      
-      // Define allowed jewelry categories
-      const allowedCategories = [
-        "Chain", "Necklace", "Ladies Ring", "Gents Ring", "Jhumka", 
-        "Bangles", "Mangalsutra", "Bali", "Tops", "Coins"
-      ].map(c => c.toLowerCase());
-      
-      // Get all categories
-      const categories = await this.masters.where('type').equals('category').toArray();
-      
-      // Find categories to remove (except default ones)
-      const defaultCategories = ["Furniture", "Electronics", "Office Supplies", "Stationery"];
-      const categoriesToRemove = categories.filter(cat => 
-        !allowedCategories.includes(cat.value.toLowerCase()) && 
-        !defaultCategories.includes(cat.value)
-      );
-      
-      // Remove unwanted categories
-      if (categoriesToRemove.length > 0) {
-        const categoryIds = categoriesToRemove.map(cat => cat.id).filter(Boolean) as string[];
-        await this.masters.bulkDelete(categoryIds);
-        console.log(`Removed ${categoryIds.length} unwanted categories`);
+        console.log('Added minimal default settings (no personal data)');
       }
       
       return true;
     } catch (error) {
-      console.error('Error cleaning up masters data:', error);
+      console.error('Error initializing settings:', error);
       return false;
     }
   }
@@ -658,7 +361,868 @@ export class InventoryDB extends Dexie {
   }
 }
 
-// Create and export a single instance to be used throughout the app
-const db = new InventoryDB();
+// Define the App database class (for application-wide data like masters)
+export class AppDB extends Dexie {
+  masters!: Table<Master, string>;
 
-export default db; 
+  constructor() {
+    super('AppDB');
+    
+    // Version 1: App data schema
+    this.version(1).stores({
+      masters: 'id, type, value, isActive, displayOrder'
+    }).upgrade(tx => {
+      console.log("Creating AppDB - adding masters table");
+      
+      // Define the initial master data
+      const initialMasters = [
+        // Categories
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'Furniture',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'Electronics',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'Office Supplies',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'Stationery',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Statuses
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'In Stock',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'Low Stock',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'Out of Stock',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Payment Methods
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Cash',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Credit Card',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'UPI',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Net Banking',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Units
+        {
+          id: this.generateId('MSTR'),
+          type: 'unit',
+          value: 'Pieces',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'unit',
+          value: 'Grams',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'unit',
+          value: 'Kilograms',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Suppliers (moved to separate table)
+        {
+          id: this.generateId('MSTR'),
+          type: 'supplier',
+          value: 'SupplyCo',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'supplier',
+          value: 'TechSuppliers',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Purity
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '916',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '750',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Metal
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'Gold',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'Silver',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      // Add to the masters table in this transaction
+      return Promise.all(initialMasters.map(master => 
+        // @ts-ignore - Dexie allows dynamic table access in transactions
+        tx.table('masters').add(master)
+      ));
+    });
+  }
+
+  // Generate ID helper function
+  generateId(prefix: string): string {
+    // Use timestamp + random number to ensure uniqueness
+    const timestamp = new Date().getTime().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `${prefix}-${timestamp}-${randomStr}`;
+  }
+  
+  // Get masters by type
+  async getMastersByType(type: string): Promise<Master[]> {
+    try {
+      console.log(`[AppDB] Getting masters of type: ${type}`)
+      const results = await this.masters
+        .where('type')
+        .equals(type)
+        .sortBy('displayOrder');
+         
+      return results;
+    } catch (error) {
+      console.error(`[AppDB] Error in getMastersByType:`, error)
+      return []
+    }
+  }
+
+  // Add method to check and seed initial masters data if needed
+  async seedInitialData() {
+    try {
+      console.log("[AppDB] Checking if masters data needs to be seeded");
+      const mastersCount = await this.masters.count();
+      
+      if (mastersCount === 0) {
+        console.log("[AppDB] No masters found, seeding initial data");
+        
+        // Define the initial master data (same as hardRefreshMasters)
+        const initialMasters = [
+          // Categories
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'chain',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'ladies_ring',
+            isActive: true,
+            displayOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'gents_ring',
+            isActive: true,
+            displayOrder: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'necklace',
+            isActive: true,
+            displayOrder: 4,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'jhumka',
+            isActive: true,
+            displayOrder: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'j_tops',
+            isActive: true,
+            displayOrder: 6,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'tops',
+            isActive: true,
+            displayOrder: 7,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'mangalsutra',
+            isActive: true,
+            displayOrder: 8,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'bangles',
+            isActive: true,
+            displayOrder: 9,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'category',
+            value: 'bracelet',
+            isActive: true,
+            displayOrder: 10,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          
+          // Statuses
+          {
+            id: this.generateId('MSTR'),
+            type: 'status',
+            value: 'In Stock',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'status',
+            value: 'Low Stock',
+            isActive: true,
+            displayOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'status',
+            value: 'Out of Stock',
+            isActive: true,
+            displayOrder: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          
+          // Payment Methods
+          {
+            id: this.generateId('MSTR'),
+            type: 'payment_method',
+            value: 'UPI',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'payment_method',
+            value: 'Cash',
+            isActive: true,
+            displayOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'payment_method',
+            value: 'Credit',
+            isActive: true,
+            displayOrder: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'payment_method',
+            value: 'Cheque',
+            isActive: true,
+            displayOrder: 4,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'payment_method',
+            value: 'Bank_Transfer',
+            isActive: true,
+            displayOrder: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          
+          // Units
+          {
+            id: this.generateId('MSTR'),
+            type: 'unit',
+            value: 'grams',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          
+          // Purity
+          {
+            id: this.generateId('MSTR'),
+            type: 'purity',
+            value: '916',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'purity',
+            value: '750',
+            isActive: true,
+            displayOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'purity',
+            value: '925',
+            isActive: true,
+            displayOrder: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'purity',
+            value: '999',
+            isActive: true,
+            displayOrder: 4,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'purity',
+            value: '850',
+            isActive: true,
+            displayOrder: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          
+          // Metal
+          {
+            id: this.generateId('MSTR'),
+            type: 'metal',
+            value: 'silver',
+            isActive: true,
+            displayOrder: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'metal',
+            value: 'gold',
+            isActive: true,
+            displayOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'metal',
+            value: 'platinum',
+            isActive: true,
+            displayOrder: 3,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'metal',
+            value: 'rhodium',
+            isActive: true,
+            displayOrder: 4,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: this.generateId('MSTR'),
+            type: 'metal',
+            value: 'others',
+            isActive: true,
+            displayOrder: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        ];
+        
+        // Add items one by one to avoid bulk add errors
+        let successCount = 0;
+        for (const master of initialMasters) {
+          try {
+            // Generate a new ID for each master to ensure uniqueness
+            master.id = this.generateId('MSTR');
+            await this.masters.add(master);
+            successCount++;
+          } catch (error) {
+            console.error(`[AppDB] Error adding master ${master.value} during initial seeding:`, error);
+          }
+        }
+        
+        console.log(`[AppDB] Successfully added ${successCount} of ${initialMasters.length} masters as seed data`);
+      } else {
+        console.log(`[AppDB] Database already has ${mastersCount} masters, no need to seed`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('[AppDB] Error seeding initial masters data:', error);
+      return false;
+    }
+  }
+  
+  // Method to hard refresh masters with updated values
+  async hardRefreshMasters() {
+    try {
+      console.log("[AppDB] Performing hard refresh of masters data");
+      
+      // First, completely delete the masters table to ensure no ID conflicts
+      await this.masters.clear();
+      console.log("[AppDB] Cleared all existing masters data");
+      
+      // Define the updated master data with new values
+      const updatedMasters = [
+        // Categories - new values
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'chain',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'ladies_ring',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'gents_ring',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'necklace',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'jhumka',
+          isActive: true,
+          displayOrder: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'j_tops',
+          isActive: true,
+          displayOrder: 6,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'tops',
+          isActive: true,
+          displayOrder: 7,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'mangalsutra',
+          isActive: true,
+          displayOrder: 8,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'bangles',
+          isActive: true,
+          displayOrder: 9,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'category',
+          value: 'bracelet',
+          isActive: true,
+          displayOrder: 10,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Statuses - keep the same
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'In Stock',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'Low Stock',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'status',
+          value: 'Out of Stock',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Payment Methods - new values
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'UPI',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Cash',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Credit',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Cheque',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'payment_method',
+          value: 'Bank_Transfer',
+          isActive: true,
+          displayOrder: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Units - new value (only grams)
+        {
+          id: this.generateId('MSTR'),
+          type: 'unit',
+          value: 'grams',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Purity - new values
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '916',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '750',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '925',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '999',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'purity',
+          value: '850',
+          isActive: true,
+          displayOrder: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        
+        // Metal - new values
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'silver',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'gold',
+          isActive: true,
+          displayOrder: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'platinum',
+          isActive: true,
+          displayOrder: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'rhodium',
+          isActive: true,
+          displayOrder: 4,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: this.generateId('MSTR'),
+          type: 'metal',
+          value: 'others',
+          isActive: true,
+          displayOrder: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      ];
+      
+      // Add items one by one to avoid bulk add errors
+      let successCount = 0;
+      for (const master of updatedMasters) {
+        try {
+          await this.masters.add(master);
+          successCount++;
+        } catch (error) {
+          console.error(`[AppDB] Error adding master ${master.value}:`, error);
+        }
+      }
+      
+      console.log(`[AppDB] Successfully added ${successCount} of ${updatedMasters.length} masters`);
+      return true;
+    } catch (error) {
+      console.error('[AppDB] Error refreshing masters data:', error);
+      return false;
+    }
+  }
+}
+
+// Create and export instances to be used throughout the app
+const userDB = new UserDB();
+const appDB = new AppDB();
+
+export { userDB, appDB };
+
+// For backward compatibility, export the user database as default
+export default userDB; 

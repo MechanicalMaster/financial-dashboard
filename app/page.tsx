@@ -181,9 +181,9 @@ export default function HomePage() {
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white relative overflow-hidden">
         {/* Decorative Background Motifs with shimmer animation */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none text-amber-700">
-          {/* Top Left Mandala */}
+          {/* Top Left Mandala - Hide on very small screens */}
           <motion.div 
-            className="absolute -top-20 -left-20 transform rotate-12"
+            className="absolute -top-20 -left-20 transform rotate-12 hidden sm:block"
             animate={{ 
               opacity: [0.2, 0.3, 0.2],
               scale: [1, 1.02, 1]
@@ -197,9 +197,9 @@ export default function HomePage() {
             {jewelryMotifs.mandala}
           </motion.div>
           
-          {/* Bottom Right Mandala */}
+          {/* Bottom Right Mandala - Hide on very small screens */}
           <motion.div 
-            className="absolute -bottom-40 -right-20 transform rotate-45"
+            className="absolute -bottom-40 -right-20 transform rotate-45 hidden sm:block"
             animate={{ 
               opacity: [0.15, 0.25, 0.15],
               scale: [1, 1.05, 1]
@@ -213,9 +213,9 @@ export default function HomePage() {
             {jewelryMotifs.mandala}
           </motion.div>
           
-          {/* Middle Right Paisley */}
+          {/* Middle Right Paisley - Adjust position on small screens */}
           <motion.div 
-            className="absolute top-1/4 -right-10 transform rotate-12"
+            className="absolute top-1/4 -right-10 sm:-right-5 transform rotate-12 scale-75 sm:scale-100"
             animate={{ 
               opacity: [0.2, 0.3, 0.2],
               y: [0, 5, 0]
@@ -229,9 +229,9 @@ export default function HomePage() {
             {jewelryMotifs.paisley}
           </motion.div>
           
-          {/* Bottom Left Paisley */}
+          {/* Bottom Left Paisley - Hide on very small screens */}
           <motion.div 
-            className="absolute bottom-10 left-10 transform -rotate-20"
+            className="absolute bottom-10 left-10 transform -rotate-20 hidden sm:block"
             animate={{ 
               opacity: [0.15, 0.25, 0.15],
               y: [0, -5, 0]
@@ -245,40 +245,9 @@ export default function HomePage() {
             {jewelryMotifs.paisley}
           </motion.div>
           
-          {/* Traditional Jhumka earring motifs */}
+          {/* Scattered Diamonds - Keep some for mobile but adjust size */}
           <motion.div 
-            className="absolute top-40 left-10 transform rotate-15"
-            animate={{ 
-              y: [0, 3, 0],
-              opacity: [0.2, 0.3, 0.2]
-            }}
-            transition={{ 
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            {jewelryMotifs.jhumka}
-          </motion.div>
-          
-          <motion.div 
-            className="absolute bottom-20 right-20 transform -rotate-10"
-            animate={{ 
-              y: [0, 3, 0],
-              opacity: [0.15, 0.25, 0.15]
-            }}
-            transition={{ 
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            {jewelryMotifs.jhumka}
-          </motion.div>
-          
-          {/* Scattered Diamonds */}
-          <motion.div 
-            className="absolute top-1/3 left-1/4 transform -translate-x-1/2 -rotate-12"
+            className="absolute top-1/3 left-1/4 transform -translate-x-1/2 -rotate-12 scale-75 sm:scale-100"
             animate={{ 
               opacity: [0.3, 0.5, 0.3],
               rotate: ["-12deg", "-10deg", "-12deg"]
@@ -291,49 +260,19 @@ export default function HomePage() {
           >
             {jewelryMotifs.diamond}
           </motion.div>
-          
-          <motion.div 
-            className="absolute top-2/3 right-1/4 transform translate-x-1/2 rotate-25"
-            animate={{ 
-              opacity: [0.2, 0.4, 0.2],
-              rotate: ["25deg", "28deg", "25deg"]
-            }}
-            transition={{ 
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            {jewelryMotifs.diamond}
-          </motion.div>
-          
-          <motion.div 
-            className="absolute top-1/2 left-16 transform rotate-45"
-            animate={{ 
-              opacity: [0.25, 0.45, 0.25],
-              rotate: ["45deg", "47deg", "45deg"]
-            }}
-            transition={{ 
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            {jewelryMotifs.diamond}
-          </motion.div>
         </div>
 
         {/* Content Container with frosted glass effect */}
-        <div className="container mx-auto px-4 py-8 relative z-10">
-          <div className="mb-2">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
+          <div className="mb-2 sm:mb-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
               Welcome to {settings?.firmDetails?.firmName || "Kuber"}
             </h1>
           </div>
           
-          {/* Decorative Header Line with shimmer */}
+          {/* Decorative Header Line with shimmer - Hide on very small screens */}
           <motion.div 
-            className="w-full flex justify-center mb-8 text-amber-700 overflow-hidden"
+            className="w-full flex justify-center mb-6 sm:mb-8 text-amber-700 overflow-hidden hidden sm:flex"
             animate={{ 
               opacity: [0.6, 0.9, 0.6] 
             }}
@@ -347,7 +286,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Navigation Cards with enhanced hover effects */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {navigationTiles.map((tile) => (
               <Link 
                 key={tile.name} 
@@ -370,10 +309,10 @@ export default function HomePage() {
                         backgroundColor: "rgba(251, 191, 36, 0.2)"
                       }}
                     >
-                      <tile.icon className="h-7 w-7" />
+                      <tile.icon className="h-6 w-6 sm:h-7 sm:w-7" />
                     </motion.div>
-                    <h3 className="font-semibold text-amber-900 mb-1">{tile.name}</h3>
-                    <p className="text-xs text-amber-600 hidden md:block">{tile.description}</p>
+                    <h3 className="font-semibold text-amber-900 mb-1 text-sm sm:text-base">{tile.name}</h3>
+                    <p className="text-xs text-amber-600 hidden sm:block">{tile.description}</p>
                   </div>
                 </motion.div>
               </Link>
@@ -506,7 +445,7 @@ export default function HomePage() {
 
         {/* Stats */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-20"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mb-20 px-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
@@ -516,7 +455,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-4xl font-bold text-amber-600 mb-2">1000+</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">1000+</h3>
             <p className="text-gray-600">{t("activeUsers")}</p>
           </motion.div>
           <motion.div 
@@ -524,28 +463,28 @@ export default function HomePage() {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-4xl font-bold text-amber-600 mb-2">₹10Cr+</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">₹10Cr+</h3>
             <p className="text-gray-600">{t("transactionsProcessed")}</p>
           </motion.div>
           <motion.div 
-            className="text-center"
+            className="text-center col-span-1 sm:col-span-2 md:col-span-1"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-4xl font-bold text-amber-600 mb-2">98%</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">98%</h3>
             <p className="text-gray-600">{t("customerSatisfaction")}</p>
           </motion.div>
         </motion.div>
       </motion.div>
 
       {/* Features Grid */}
-      <div id="features" className="relative py-16 px-4 bg-white">
+      <div id="features" className="relative py-12 sm:py-16 px-4 bg-white">
         <motion.div
           className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"
           style={{ y: parallaxY }}
         />
         <motion.h2 
-          className="text-3xl font-bold text-center mb-12 text-gray-800 relative z-10"
+          className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-800 relative z-10"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -553,7 +492,7 @@ export default function HomePage() {
         >
           {t("featuresTitle")}
         </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto relative z-10">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -566,16 +505,16 @@ export default function HomePage() {
                 boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
               }}
             >
-              <Card className="overflow-hidden">
-                <CardContent className="p-6">
+              <Card className="overflow-hidden h-full">
+                <CardContent className="p-4 sm:p-6">
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 400 }}
                   >
-                    <feature.icon className="w-12 h-12 text-amber-600 mb-4" />
+                    <feature.icon className="w-10 h-10 sm:w-12 sm:h-12 text-amber-600 mb-4" />
                   </motion.div>
-                  <h3 className="text-xl font-semibold mb-2">{t(feature.title)}</h3>
-                  <p className="text-gray-600">{t(feature.description)}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2">{t(feature.title)}</h3>
+                  <p className="text-sm sm:text-base text-gray-600">{t(feature.description)}</p>
                 </CardContent>
               </Card>
             </motion.div>

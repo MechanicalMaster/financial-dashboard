@@ -187,7 +187,7 @@ export default function EditCustomerPage({ params }: EditCustomerPageProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Customer Email Address</Label>
                 <Input
                   id="email"
                   name="email"
@@ -199,7 +199,7 @@ export default function EditCustomerPage({ params }: EditCustomerPageProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">Customer Phone Number *</Label>
                 <Input
                   id="phone"
                   name="phone"

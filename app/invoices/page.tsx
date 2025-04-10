@@ -9,12 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Download, Filter, Plus, Search, Calendar, MoreHorizontal } from "lucide-react"
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge"
 import { Pagination } from "@/components/invoices/pagination"
-import { DateRangePicker } from "@/components/date-range-picker"
 import { type InvoiceStatus } from "@/components/invoices/invoice-status-badge"
 import { BookingLedger, type BookingLine, type BookingPayment } from "@/components/invoices/booking-ledger"
 import Link from "next/link"
 import { getPath } from "@/lib/utils/path-utils"
 import db, { Invoice as DBInvoice } from "@/lib/db"
+import { useDB } from "@/contexts/db-context"
+import { format } from "date-fns"
 
 // Define invoice type
 interface Invoice {
@@ -27,9 +28,6 @@ interface Invoice {
   status: InvoiceStatus
 }
 
-// Empty invoice data instead of sample data
-const invoices: Invoice[] = []
-
 // Empty booking ledger data instead of sample data
 const bookingLines: BookingLine[] = []
 
@@ -37,10 +35,60 @@ const bookingLines: BookingLine[] = []
 const bookingPayments: BookingPayment[] = bookingLines.flatMap(line => line.payments)
 
 export default function InvoicesPage() {
+  const { getAll } = useDB()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const itemsPerPage = 10
+
+  // Fetch invoices from the database
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      setIsLoading(true)
+      try {
+        // Get invoices from database
+        const invoicesData = await getAll<DBInvoice>('invoices')
+        
+        // Convert to the format needed for display
+        const formattedInvoices: Invoice[] = invoicesData.map(invoice => {
+          // Extract data we need, handling any missing or undefined properties
+          const invoiceId = invoice.id || ""
+          const date = invoice.date instanceof Date 
+            ? format(invoice.date, "yyyy-MM-dd")
+            : format(new Date(invoice.date), "yyyy-MM-dd")
+          const dueDate = invoice.dueDate instanceof Date 
+            ? format(invoice.dueDate, "yyyy-MM-dd") 
+            : invoice.dueDate ? format(new Date(invoice.dueDate), "yyyy-MM-dd") : undefined
+          const amount = invoice.amount || 0
+          const status = invoice.status as InvoiceStatus
+          
+          // Get client name from customerId or fallback to "Unknown Customer"
+          // Use type assertion to access potentially undefined properties
+          const client = (invoice as any).customerName || "Unknown Customer"
+          
+          return {
+            id: invoiceId,
+            date,
+            dueDate,
+            client,
+            amount,
+            status
+          }
+        })
+        
+        setInvoices(formattedInvoices)
+        console.log("Fetched invoices:", formattedInvoices)
+      } catch (error) {
+        console.error("Error fetching invoices:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchInvoices()
+  }, [getAll])
 
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
@@ -51,38 +99,6 @@ export default function InvoicesPage() {
   })
 
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage)
-
-  // Add a cleanup function that runs once on component mount
-  useEffect(() => {
-    const cleanupDummyInvoices = async () => {
-      try {
-        // Get all invoices
-        const allInvoices = await db.invoices.toArray();
-        
-        // Check if there are any dummy invoices
-        if (allInvoices.length > 0) {
-          // These are the IDs of all the demo invoices we want to remove
-          const dummyInvoiceIds = allInvoices
-            .map(invoice => invoice.id)
-            .filter((id): id is string => id !== undefined);
-          
-          if (dummyInvoiceIds.length > 0) {
-            // Delete all dummy invoices
-            await db.invoices.bulkDelete(dummyInvoiceIds);
-            console.log(`Removed ${dummyInvoiceIds.length} dummy invoices`);
-            
-            // Force refresh the page to show empty state
-            window.location.reload();
-          }
-        }
-      } catch (error) {
-        console.error("Error removing dummy invoices:", error);
-      }
-    };
-    
-    // Run the cleanup function
-    cleanupDummyInvoices();
-  }, []);
 
   return (
     <div className="container py-6">
@@ -134,7 +150,6 @@ export default function InvoicesPage() {
                 </Select>
               </div>
               <div className="flex items-center gap-4">
-                <DateRangePicker />
                 <Button variant="outline" size="icon">
                   <Download className="h-4 w-4" />
                 </Button>
@@ -158,23 +173,39 @@ export default function InvoicesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>{invoice.id}</TableCell>
-                      <TableCell>{invoice.date}</TableCell>
-                      <TableCell>{invoice.dueDate}</TableCell>
-                      <TableCell>{invoice.client}</TableCell>
-                      <TableCell className="text-right">₹{invoice.amount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <InvoiceStatusBadge status={invoice.status} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        Loading invoices...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredInvoices.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        No invoices found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredInvoices
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell>{invoice.id}</TableCell>
+                          <TableCell>{invoice.date}</TableCell>
+                          <TableCell>{invoice.dueDate}</TableCell>
+                          <TableCell>{invoice.client}</TableCell>
+                          <TableCell className="text-right">₹{invoice.amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <InvoiceStatusBadge status={invoice.status} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
                 </TableBody>
               </Table>
             </div>

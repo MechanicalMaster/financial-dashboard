@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -69,6 +69,9 @@ import { InventoryItem } from "@/lib/db"
 import QRCode from "qrcode"
 // @ts-ignore - XLSX doesn't have TypeScript definitions in this project
 import * as XLSX from "xlsx"
+
+// Import userDB directly for references
+import { userDB } from "@/lib/db"
 
 // Define a type for Excel row data
 interface ExcelRowData {
@@ -438,33 +441,7 @@ export default function StockPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Get the database context
-  const { getAll, remove: deleteItem, db, add: addItem } = useDB()
-  
-  // Cleanup dummy data from previous versions
-  useEffect(() => {
-    const cleanupDummyData = async () => {
-      try {
-        const existingItems = await getAll<InventoryItem>('inventory')
-        const dummyItems = existingItems.filter(item => item.name?.includes("Sample"))
-        
-        if (dummyItems.length > 0) {
-          console.log(`Cleaning up ${dummyItems.length} dummy inventory items`)
-          
-          for (const item of dummyItems) {
-            if (item.id) {
-              await deleteItem('inventory', item.id)
-            }
-          }
-          
-          toast.success(`Cleaned up ${dummyItems.length} sample items`)
-        }
-      } catch (error) {
-        console.error("Error cleaning up dummy inventory:", error)
-      }
-    }
-    
-    cleanupDummyData()
-  }, [getAll, deleteItem])
+  const { getAll, remove: deleteItem, add: addItem } = useDB()
   
   // Fetch inventory data
   useEffect(() => {
@@ -961,7 +938,7 @@ export default function StockPage() {
           const purity = (row.Purity as string) || (row.purity as string) || ''
 
           const item: InventoryItem = {
-            id: db.generateId('INV'),
+            id: userDB.generateId('ITEM'),
             name,
             category,
             description,

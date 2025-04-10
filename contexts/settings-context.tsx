@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { useDB } from "./db-context"
 
 export interface UserSettings {
-  avatar: string
+  profilePhoto: string
   fullName: string
   email: string
   phone: string
@@ -47,16 +47,10 @@ export interface UserSettings {
     quietHoursStart: string
     quietHoursEnd: string
   }
-  privacy: {
-    analyticsSharing: boolean
-    personalizedAds: boolean
-    visibility: "public" | "private"
-    dataRetention: "6-months" | "1-year" | "2-years" | "indefinite"
-  }
 }
 
 const defaultSettings: UserSettings = {
-  avatar: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/38184074.jpg-M4vCjTSSWVw5RwWvvmrxXBcNVU8MBU.jpeg",
+  profilePhoto: "",
   fullName: "Dollar Singh",
   email: "dollar.singh@example.com",
   phone: "+1 (555) 123-4567",
@@ -106,12 +100,6 @@ const defaultSettings: UserSettings = {
     frequency: "daily",
     quietHoursStart: "22:00",
     quietHoursEnd: "08:00"
-  },
-  privacy: {
-    analyticsSharing: true,
-    personalizedAds: false,
-    visibility: "public",
-    dataRetention: "1-year"
   }
 }
 
@@ -119,7 +107,6 @@ interface SettingsContextType {
   settings: UserSettings
   updateSettings: (newSettings: Partial<UserSettings>) => void
   updateNotificationSettings: (settings: Partial<UserSettings["notifications"]>) => void
-  updatePrivacySettings: (settings: Partial<UserSettings["privacy"]>) => void
   updateFirmDetails: (settings: Partial<UserSettings["firmDetails"]>) => void
   updateInvoiceTemplates: (templates: Partial<UserSettings["invoiceTemplates"]>) => void
 }
@@ -157,10 +144,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             notifications: {
               ...defaultSettings.notifications,
               ...(savedSettings.notifications || {})
-            },
-            privacy: {
-              ...defaultSettings.privacy,
-              ...(savedSettings.privacy || {})
             }
           };
           
@@ -203,7 +186,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const updateNotificationSettings = async (notificationSettings: Partial<UserSettings["notifications"]>) => {
     const updatedSettings = {
       ...settings,
-      notifications: { ...settings.notifications, ...notificationSettings },
+      notifications: {
+        ...settings.notifications,
+        ...notificationSettings
+      },
       updatedAt: new Date()
     }
     setSettings(updatedSettings)
@@ -215,25 +201,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updatePrivacySettings = async (privacySettings: Partial<UserSettings["privacy"]>) => {
-    const updatedSettings = {
-      ...settings,
-      privacy: { ...settings.privacy, ...privacySettings },
-      updatedAt: new Date()
-    }
-    setSettings(updatedSettings)
-    
-    try {
-      await update('settings', userId, updatedSettings);
-    } catch (error) {
-      console.error('Error saving privacy settings:', error);
-    }
-  }
-
   const updateFirmDetails = async (firmDetails: Partial<UserSettings["firmDetails"]>) => {
     const updatedSettings = {
       ...settings,
-      firmDetails: { ...settings.firmDetails, ...firmDetails },
+      firmDetails: {
+        ...settings.firmDetails,
+        ...firmDetails
+      },
       updatedAt: new Date()
     }
     setSettings(updatedSettings)
@@ -248,7 +222,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const updateInvoiceTemplates = async (invoiceTemplates: Partial<UserSettings["invoiceTemplates"]>) => {
     const updatedSettings = {
       ...settings,
-      invoiceTemplates: { ...settings.invoiceTemplates, ...invoiceTemplates },
+      invoiceTemplates: {
+        ...settings.invoiceTemplates,
+        ...invoiceTemplates
+      },
       updatedAt: new Date()
     }
     setSettings(updatedSettings)
@@ -256,7 +233,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     try {
       await update('settings', userId, updatedSettings);
     } catch (error) {
-      console.error('Error saving invoice template settings:', error);
+      console.error('Error saving invoice templates:', error);
     }
   }
 
@@ -266,9 +243,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         settings,
         updateSettings,
         updateNotificationSettings,
-        updatePrivacySettings,
         updateFirmDetails,
-        updateInvoiceTemplates,
+        updateInvoiceTemplates
       }}
     >
       {children}

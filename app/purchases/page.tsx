@@ -27,20 +27,6 @@ export default function PurchasesPage() {
     { title: "Avg. Turnaround", value: "0 days", icon: Truck, change: "0 days" }
   ])
 
-  // One-time cleanup for dummy data
-  useEffect(() => {
-    const cleanupDummyData = async () => {
-      try {
-        // Call the cleanupPurchaseData method directly
-        await db.cleanupPurchaseData();
-      } catch (error) {
-        console.error("Error cleaning up purchase data:", error);
-      }
-    };
-    
-    cleanupDummyData();
-  }, [db]);
-
   // Fetch actual purchase data from the database
   useEffect(() => {
     const fetchPurchaseData = async () => {

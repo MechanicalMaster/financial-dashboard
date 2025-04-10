@@ -27,45 +27,6 @@ interface InvoiceItem {
   rate: number
 }
 
-// Sample customer data (this would come from your API in a real app)
-const sampleCustomers = [
-  {
-    id: "CUST-001",
-    name: "Acme Corporation",
-    email: "info@acmecorp.com",
-    phone: "+91 98765 43210",
-    address: "123 Main Street, Mumbai, 400001",
-  },
-  {
-    id: "CUST-002",
-    name: "Globex Industries",
-    email: "contact@globex.com",
-    phone: "+91 98765 12345",
-    address: "456 Park Avenue, Delhi, 110001",
-  },
-  {
-    id: "CUST-003",
-    name: "Stark Enterprises",
-    email: "hello@stark.com",
-    phone: "+91 77665 54433",
-    address: "789 Tower Road, Bangalore, 560001",
-  },
-  {
-    id: "CUST-004",
-    name: "Wayne Industries",
-    email: "business@wayne.com",
-    phone: "+91 88899 77766",
-    address: "101 Central Avenue, Chennai, 600001",
-  },
-  {
-    id: "CUST-005",
-    name: "Oscorp",
-    email: "info@oscorp.com",
-    phone: "+91 92233 44556",
-    address: "222 Tech Park, Hyderabad, 500001",
-  },
-]
-
 // Generate UUID function for compatibility across browsers
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -77,7 +38,7 @@ function generateUUID() {
 
 export default function CreateInvoicePage() {
   const router = useRouter()
-  const { add, getMastersByType } = useDB()
+  const { add, getMastersByType, getAll } = useDB()
   const { settings } = useSettings()
   const [invoiceNumber, setInvoiceNumber] = useState(
     `INV-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`,
@@ -91,7 +52,7 @@ export default function CreateInvoicePage() {
   ])
   const [notes, setNotes] = useState("")
   const [paymentTerms, setPaymentTerms] = useState("30")
-  const [availableCustomers, setAvailableCustomers] = useState(sampleCustomers)
+  const [availableCustomers, setAvailableCustomers] = useState<any[]>([])
   const [purities, setPurities] = useState<{id?: string, value: string}[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
@@ -102,10 +63,11 @@ export default function CreateInvoicePage() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 300))
-        setAvailableCustomers(sampleCustomers)
+        const customers = await getAll('customers')
+        setAvailableCustomers(customers || [])
       } catch (error) {
         console.error("Error fetching customers:", error)
+        setAvailableCustomers([])
       }
     }
 
@@ -141,7 +103,7 @@ export default function CreateInvoicePage() {
 
     fetchCustomers()
     fetchPurities()
-  }, [getMastersByType])
+  }, [getMastersByType, getAll])
 
   // When customer is selected, auto-fill their mobile and address
   useEffect(() => {
@@ -596,19 +558,24 @@ export default function CreateInvoicePage() {
     setIsPrinting(true)
     
     try {
+      // First, save the invoice to the database
       const invoiceData = await saveInvoice()
       if (invoiceData) {
+        // Generate the PDF only if the invoice was saved successfully
         const pdfSuccess = await generatePDF(invoiceData)
         if (pdfSuccess) {
-          toast.success("Invoice printed successfully")
+          toast.success("Invoice saved and printed successfully")
+          // Redirect to the invoices page to see the newly created invoice
           router.push(getPath("/invoices"))
         } else {
-          toast.error("Failed to print invoice")
+          toast.error("Invoice saved but failed to print")
+          // Still redirect if the invoice was saved but PDF generation failed
+          router.push(getPath("/invoices"))
         }
       }
     } catch (error) {
       console.error("Error printing invoice:", error)
-      toast.error("Failed to print invoice")
+      toast.error("Failed to save and print invoice")
     } finally {
       setIsPrinting(false)
     }

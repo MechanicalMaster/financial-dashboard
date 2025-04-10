@@ -58,22 +58,6 @@ export default function InventoryPage() {
   const itemsPerPage = 12
   const { getAll, remove } = useDB()
 
-  // One-time cleanup on first load
-  useEffect(() => {
-    // Skip during server-side rendering
-    if (typeof window === 'undefined') return;
-    
-    const cleanupDummyData = async () => {
-      try {
-        await db.cleanupInventoryData();
-      } catch (error) {
-        console.error("Error cleaning inventory data:", error);
-      }
-    };
-    
-    cleanupDummyData();
-  }, []);
-
   // Ensure client-side mounting is detected
   useEffect(() => {
     setIsMounted(true)

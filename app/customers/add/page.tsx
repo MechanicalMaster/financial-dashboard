@@ -15,7 +15,7 @@ import { Customer } from "@/lib/db"
 export default function AddCustomerPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { add, db } = useDB()
+  const { add, userDB } = useDB()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,7 +36,7 @@ export default function AddCustomerPage() {
     try {
       // Create a new customer object with the form data
       const newCustomer: Customer = {
-        id: db.generateId('CUST'),
+        id: userDB.generateId('CUST'),
         ...formData,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -86,7 +86,7 @@ export default function AddCustomerPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Customer Email Address</Label>
                 <Input
                   id="email"
                   name="email"
@@ -98,7 +98,7 @@ export default function AddCustomerPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">Customer Phone Number *</Label>
                 <Input
                   id="phone"
                   name="phone"

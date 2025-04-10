@@ -1,8 +1,11 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import db, { 
-  InventoryDB, 
+import { 
+  UserDB, 
+  AppDB,
+  userDB,
+  appDB,
   User, 
   Customer, 
   InventoryItem, 
@@ -12,10 +15,12 @@ import db, {
   Analytics,
   Master
 } from '@/lib/db';
+import { refreshMastersData } from '@/lib/initializers';
 
 // Define the shape of our context
 interface DBContextType {
-  db: InventoryDB;
+  userDB: UserDB;
+  appDB: AppDB;
   // Generic CRUD operations
   add: <T>(storeName: string, item: T) => Promise<string>;
   get: <T>(storeName: string, id: string) => Promise<T | undefined>;
@@ -43,8 +48,23 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsLoading(true);
         
-        // Seed initial data if needed
-        await db.seedInitialData();
+        // Initialize settings structure if needed, but don't seed any dummy data
+        await userDB.seedInitialData();
+        
+        // First clean up any potential duplicate masters before initializing
+        try {
+          // Clear existing masters to ensure a clean state
+          await appDB.masters.clear();
+          console.log('[DBContext] Cleared masters table for fresh initialization');
+        } catch (clearError) {
+          console.error('[DBContext] Error clearing masters table:', clearError);
+        }
+        
+        // Then initialize the AppDB with masters data
+        await appDB.seedInitialData();
+        
+        // Execute the hard refresh of masters with new data if needed
+        await refreshMastersData();
         
         setIsLoading(false);
       } catch (err) {
@@ -57,9 +77,21 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
     initDb();
   }, []);
 
+  // Determine which database to use based on the store name
+  const getDatabase = (storeName: string) => {
+    // App data tables
+    if (storeName === 'masters') {
+      return appDB;
+    }
+    // User data tables
+    return userDB;
+  };
+
   // Generic CRUD operations
   const add = async <T,>(storeName: string, item: T): Promise<string> => {
     try {
+      const db = getDatabase(storeName);
+      
       // Ensure the table exists before attempting to add
       if (!db.tables.some(table => table.name === storeName)) {
         throw new Error(`Table "${storeName}" does not exist in the database`);
@@ -76,6 +108,7 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
 
   const get = async <T,>(storeName: string, id: string): Promise<T | undefined> => {
     try {
+      const db = getDatabase(storeName);
       // @ts-ignore - Dexie allows dynamic table access
       return await db.table(storeName).get(id);
     } catch (err) {
@@ -86,6 +119,7 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
 
   const getAll = async <T,>(storeName: string): Promise<T[]> => {
     try {
+      const db = getDatabase(storeName);
       // @ts-ignore - Dexie allows dynamic table access
       return await db.table(storeName).toArray();
     } catch (err) {
@@ -96,6 +130,7 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
 
   const update = async <T,>(storeName: string, id: string, changes: Partial<T>): Promise<void> => {
     try {
+      const db = getDatabase(storeName);
       // @ts-ignore - Dexie allows dynamic table access
       return await db.table(storeName).update(id, changes);
     } catch (err) {
@@ -106,6 +141,7 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
 
   const remove = async (storeName: string, id: string): Promise<void> => {
     try {
+      const db = getDatabase(storeName);
       // @ts-ignore - Dexie allows dynamic table access
       return await db.table(storeName).delete(id);
     } catch (err) {
@@ -116,7 +152,8 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
 
   // Context value
   const value: DBContextType = {
-    db,
+    userDB,
+    appDB,
     add,
     get,
     getAll,
@@ -125,7 +162,7 @@ export function DBProvider({ children }: { children: React.ReactNode }) {
     getMastersByType: async (type: string) => {
       console.log(`[DBContext] Getting masters of type: ${type}`)
       try {
-        const results = await db.getMastersByType(type)
+        const results = await appDB.getMastersByType(type)
         console.log(`[DBContext] Found ${results.length} results:`, results)
         return results
       } catch (error) {
