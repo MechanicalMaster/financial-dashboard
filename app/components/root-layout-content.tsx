@@ -6,7 +6,7 @@ import { TopNav } from "@/components/top-nav"
 import { useAuth } from "@/contexts/auth-context"
 
 // Define public routes that don't need authentication
-const publicRoutes = ['/login']
+const publicRoutes = ['/login', '/register', '/reset-password']
 
 export function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ''

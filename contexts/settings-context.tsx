@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useDB } from "./db-context"
+import { userDB } from "@/lib/db"
+import { useAuth } from "./auth-context"
 
 export interface UserSettings {
   profilePhoto: string
@@ -46,6 +48,16 @@ export interface UserSettings {
     frequency: "real-time" | "daily" | "weekly"
     quietHoursStart: string
     quietHoursEnd: string
+  }
+  backups: {
+    created: {
+      timestamp: string;
+      filename: string;
+    }[];
+    restored: {
+      timestamp: string;
+      filename: string;
+    }[];
   }
 }
 
@@ -100,6 +112,10 @@ const defaultSettings: UserSettings = {
     frequency: "daily",
     quietHoursStart: "22:00",
     quietHoursEnd: "08:00"
+  },
+  backups: {
+    created: [],
+    restored: []
   }
 }
 
@@ -109,6 +125,8 @@ interface SettingsContextType {
   updateNotificationSettings: (settings: Partial<UserSettings["notifications"]>) => void
   updateFirmDetails: (settings: Partial<UserSettings["firmDetails"]>) => void
   updateInvoiceTemplates: (templates: Partial<UserSettings["invoiceTemplates"]>) => void
+  createBackup: () => Promise<{ success: boolean; filename?: string; error?: string }>
+  restoreBackup: (backupData: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -118,7 +136,8 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings)
   const { get, update, add, isLoading } = useDB();
-  const userId = 'default-user-id'; // In a real app, get this from authentication
+  const { user } = useAuth();
+  const userId = user?.uid || 'default-user-id'; // Use Firebase user ID or fallback
 
   // Load settings from database when component mounts
   useEffect(() => {
@@ -144,6 +163,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             notifications: {
               ...defaultSettings.notifications,
               ...(savedSettings.notifications || {})
+            },
+            backups: {
+              ...defaultSettings.backups,
+              ...(savedSettings.backups || {})
             }
           };
           
@@ -237,6 +260,141 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const createBackup = async (): Promise<{ success: boolean; filename?: string; error?: string }> => {
+    try {
+      // Get all data from UserDB tables
+      const userData = {
+        users: await userDB.users.toArray(),
+        customers: await userDB.customers.toArray(),
+        inventory: await userDB.inventory.toArray(),
+        oldStock: await userDB.oldStock.toArray(),
+        invoices: await userDB.invoices.toArray(),
+        purchases: await userDB.purchases.toArray(),
+        settings: await userDB.settings.toArray(),
+        analytics: await userDB.analytics.toArray()
+      };
+
+      // Create a JSON string from the data
+      const backupData = JSON.stringify(userData, null, 2);
+      
+      // Generate a filename with timestamp
+      const timestamp = new Date().toISOString();
+      const filename = `kuber_backup_${timestamp.replace(/[:.]/g, "-")}.json`;
+      
+      // Create a downloadable file for the user
+      const blob = new Blob([backupData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Update backup history
+      const updatedSettings = {
+        ...settings,
+        backups: {
+          ...settings.backups,
+          created: [
+            { timestamp, filename },
+            ...settings.backups.created.slice(0, 2) // Keep only the 3 most recent
+          ]
+        }
+      };
+      
+      setSettings(updatedSettings);
+      await update('settings', userId, updatedSettings);
+      
+      return { success: true, filename };
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error during backup' 
+      };
+    }
+  };
+
+  const restoreBackup = async (backupData: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Parse the backup data
+      const data = JSON.parse(backupData);
+      
+      // Validate the backup data
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: 'Invalid backup data format' };
+      }
+      
+      // Check if required tables exist
+      const requiredTables = ['users', 'customers', 'inventory', 'invoices', 'settings'];
+      const missingTables = requiredTables.filter(table => !data[table]);
+      
+      if (missingTables.length > 0) {
+        return { 
+          success: false, 
+          error: `Backup is missing data for tables: ${missingTables.join(', ')}` 
+        };
+      }
+      
+      // Clear all existing data
+      await userDB.users.clear();
+      await userDB.customers.clear();
+      await userDB.inventory.clear();
+      await userDB.oldStock.clear();
+      await userDB.invoices.clear();
+      await userDB.purchases.clear();
+      await userDB.settings.clear();
+      await userDB.analytics.clear();
+      
+      // Restore data to each table
+      await userDB.users.bulkAdd(data.users || []);
+      await userDB.customers.bulkAdd(data.customers || []);
+      await userDB.inventory.bulkAdd(data.inventory || []);
+      await userDB.oldStock.bulkAdd(data.oldStock || []);
+      await userDB.invoices.bulkAdd(data.invoices || []);
+      await userDB.purchases.bulkAdd(data.purchases || []);
+      await userDB.analytics.bulkAdd(data.analytics || []);
+      
+      // We need to handle settings specially to retain backup history
+      const currentSettings = settings;
+      
+      // Find the settings for the current user
+      let userSettings = data.settings.find((s: any) => s.id === userId);
+      
+      if (userSettings) {
+        // Make sure to preserve the backup history
+        userSettings = {
+          ...userSettings,
+          backups: {
+            ...userSettings.backups,
+            restored: [
+              { 
+                timestamp: new Date().toISOString(), 
+                filename: `Restored from backup on ${new Date().toLocaleString()}`
+              },
+              ...currentSettings.backups.restored.slice(0, 2) // Keep only the 3 most recent
+            ]
+          }
+        };
+        
+        await userDB.settings.add(userSettings);
+        setSettings(userSettings);
+      }
+      
+      // Reload the page to reflect changes
+      window.location.reload();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error during restore' 
+      };
+    }
+  };
+
   return (
     <SettingsContext.Provider
       value={{
@@ -244,7 +402,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         updateSettings,
         updateNotificationSettings,
         updateFirmDetails,
-        updateInvoiceTemplates
+        updateInvoiceTemplates,
+        createBackup,
+        restoreBackup
       }}
     >
       {children}

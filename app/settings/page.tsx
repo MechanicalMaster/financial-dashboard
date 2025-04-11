@@ -12,12 +12,14 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Laptop, Smartphone, Tablet } from "lucide-react"
-import { useState } from "react"
+import { Laptop, Smartphone, Tablet, Download, Upload, Clock, AlertCircle } from "lucide-react"
+import { useState, useRef } from "react"
 import { toast } from "sonner"
 
 export default function SettingsPage() {
-  const { settings, updateSettings, updateNotificationSettings, updateFirmDetails, updateInvoiceTemplates } = useSettings()
+  const { settings, updateSettings, updateNotificationSettings, updateFirmDetails, updateInvoiceTemplates, createBackup, restoreBackup } = useSettings()
+  const [isRestoring, setIsRestoring] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSaveAccount = () => {
     updateSettings({
@@ -41,15 +43,68 @@ export default function SettingsPage() {
     toast.success("Invoice template updated successfully")
   }
 
+  const handleCreateBackup = async () => {
+    try {
+      const result = await createBackup()
+      if (result.success) {
+        toast.success("Backup created successfully")
+      } else {
+        toast.error(`Failed to create backup: ${result.error}`)
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred")
+      console.error(error)
+    }
+  }
+
+  const handleRestoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setIsRestoring(true)
+      
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const data = e.target?.result as string
+        const result = await restoreBackup(data)
+        
+        if (result.success) {
+          toast.success("Backup restored successfully")
+        } else {
+          toast.error(`Failed to restore backup: ${result.error}`)
+        }
+        
+        setIsRestoring(false)
+        // Clear the file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      }
+      
+      reader.onerror = () => {
+        toast.error("Failed to read backup file")
+        setIsRestoring(false)
+      }
+      
+      reader.readAsText(file)
+    } catch (error) {
+      toast.error("An unexpected error occurred")
+      console.error(error)
+      setIsRestoring(false)
+    }
+  }
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
       <Tabs defaultValue="account" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="firm-details">Firm Details</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="backup">Backup</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
@@ -445,6 +500,114 @@ export default function SettingsPage() {
             <CardFooter>
               <Button onClick={handleSaveNotifications}>Save Notification Settings</Button>
             </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="backup">
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup & Restore</CardTitle>
+              <CardDescription>Create backups and restore your data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Create Backup */}
+                <div className="space-y-4 border rounded-md p-4">
+                  <div className="flex items-center gap-2">
+                    <Download className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Create Backup</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Export all your data into a JSON file that you can save locally.
+                  </p>
+                  <Button onClick={handleCreateBackup} className="w-full">
+                    Download Backup
+                  </Button>
+                </div>
+
+                {/* Restore Backup */}
+                <div className="space-y-4 border rounded-md p-4">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Restore Backup</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Import data from a previously created backup file.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="backup-file">Select Backup File</Label>
+                    <Input 
+                      id="backup-file" 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept=".json" 
+                      onChange={handleRestoreBackup}
+                      disabled={isRestoring}
+                    />
+                  </div>
+                  {isRestoring && (
+                    <div className="flex items-center justify-center p-2 text-sm">
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Restoring your backup...
+                    </div>
+                  )}
+                  <div className="flex items-center mt-2">
+                    <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+                    <p className="text-xs text-amber-500">
+                      Warning: Restoring a backup will replace all your current data.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Backup History */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-3">Backup History</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Recent Backups Created</h4>
+                    {settings.backups?.created && settings.backups.created.length > 0 ? (
+                      <div className="space-y-2">
+                        {settings.backups.created.map((backup, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-2" />
+                              <span className="text-sm">{new Date(backup.timestamp).toLocaleString()}</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+                              {backup.filename}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No recent backups</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Recent Restores</h4>
+                    {settings.backups?.restored && settings.backups.restored.length > 0 ? (
+                      <div className="space-y-2">
+                        {settings.backups.restored.map((restore, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-2" />
+                              <span className="text-sm">{new Date(restore.timestamp).toLocaleString()}</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+                              {restore.filename}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No recent restores</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
