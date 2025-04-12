@@ -775,22 +775,24 @@ export default function CreateInvoicePage() {
             </Button>
           </div>
 
+          {/* Responsive Invoice Items Section */}
           <div className="space-y-4">
-            {/* Column Labels */}
-            <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-              <div className="col-span-3">Item Name</div>
-              <div className="col-span-1 text-center">Gross Wt</div>
-              <div className="col-span-1 text-center">Net Wt</div>
-              <div className="col-span-1 text-center">Purity</div>
-              <div className="col-span-2 text-center">Rate</div>
-              <div className="col-span-3 text-right pr-3">Total</div>
-              <div className="col-span-1"></div>
+            {/* Column Labels - Hidden on mobile, shown on md and up */}
+            <div className="hidden md:grid md:grid-cols-12 md:gap-4 text-sm font-medium text-gray-700">
+              <div className="md:col-span-3">Item Name</div>
+              <div className="md:col-span-1 text-center">Gross Wt</div>
+              <div className="md:col-span-1 text-center">Net Wt</div>
+              <div className="md:col-span-1 text-center">Purity</div>
+              <div className="md:col-span-2 text-center">Rate</div>
+              <div className="md:col-span-3 text-right pr-3">Total</div>
+              <div className="md:col-span-1"></div> { /* Spacer for delete button */}
             </div>
             
             {items.map((item, index) => (
-              <div key={item.id} className="grid grid-cols-12 gap-4 items-center">
-                <div className="col-span-3">
-                  <Label htmlFor={`item-desc-${index}`} className="sr-only">
+              <div key={item.id} className="border rounded-md p-4 md:p-0 md:border-none md:grid md:grid-cols-12 md:gap-4 md:items-center space-y-2 md:space-y-0">
+                {/* Item Name */}
+                <div className="md:col-span-3 space-y-1 md:space-y-0">
+                  <Label htmlFor={`item-desc-${index}`} className="text-xs font-medium md:hidden">
                     Item Name
                   </Label>
                   <Input
@@ -801,132 +803,157 @@ export default function CreateInvoicePage() {
                     required
                   />
                 </div>
-                <div className="col-span-1">
-                  <Label htmlFor={`item-gross-weight-${index}`} className="sr-only">
-                    Gross Weight (g)
-                  </Label>
-                  <Input
-                    id={`item-gross-weight-${index}`}
-                    type="number"
-                    placeholder="Gross Wt"
-                    value={item.grossWeight}
-                    onChange={(e) => updateItem(item.id, "grossWeight", parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
-                <div className="col-span-1">
-                  <Label htmlFor={`item-net-weight-${index}`} className="sr-only">
-                    Net Weight (g)
-                  </Label>
-                  <Input
-                    id={`item-net-weight-${index}`}
-                    type="number"
-                    placeholder="Net Wt"
-                    value={item.netWeight}
-                    onChange={(e) => updateItem(item.id, "netWeight", parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
-                <div className="col-span-1">
-                  <Label htmlFor={`item-purity-${index}`} className="sr-only">
-                    Purity
-                  </Label>
-                  <Select
-                    value={item.purity}
-                    onValueChange={(value) => updateItem(item.id, "purity", value)}
-                  >
-                    <SelectTrigger id={`item-purity-${index}`}>
-                      <SelectValue placeholder="Purity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {purities.map((purity) => (
-                        <SelectItem key={purity.id || purity.value} value={purity.value}>
-                          {purity.value}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor={`item-rate-${index}`} className="sr-only">
-                    Rate
-                  </Label>
-                  <Input
-                    id={`item-rate-${index}`}
-                    type="number"
-                    placeholder="Rate"
-                    value={item.rate}
-                    onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
-                <div className="col-span-3">
-                  <Label className="sr-only">Amount</Label>
-                  <div className="h-10 px-3 py-2 rounded-md border border-input bg-background text-right">
-                    ₹{(item.netWeight * item.rate).toFixed(2)}
+                
+                {/* Mobile layout for weights, purity, rate */}
+                <div className="grid grid-cols-2 gap-4 md:col-span-5 md:grid-cols-5">
+                  {/* Gross Wt */}
+                  <div className="space-y-1 md:space-y-0">
+                    <Label htmlFor={`item-gross-weight-${index}`} className="text-xs font-medium md:hidden">
+                      Gross Wt (g)
+                    </Label>
+                    <Input
+                      id={`item-gross-weight-${index}`}
+                      type="number"
+                      placeholder="Gross Wt"
+                      value={item.grossWeight}
+                      onChange={(e) => updateItem(item.id, "grossWeight", parseFloat(e.target.value) || 0)}
+                      required
+                      className="text-center"
+                    />
+                  </div>
+                  {/* Net Wt */}
+                  <div className="space-y-1 md:space-y-0">
+                    <Label htmlFor={`item-net-weight-${index}`} className="text-xs font-medium md:hidden">
+                      Net Wt (g)
+                    </Label>
+                    <Input
+                      id={`item-net-weight-${index}`}
+                      type="number"
+                      placeholder="Net Wt"
+                      value={item.netWeight}
+                      onChange={(e) => updateItem(item.id, "netWeight", parseFloat(e.target.value) || 0)}
+                      required
+                      className="text-center"
+                    />
+                  </div>
+                  {/* Purity */}
+                  <div className="space-y-1 md:space-y-0">
+                    <Label htmlFor={`item-purity-${index}`} className="text-xs font-medium md:hidden">
+                      Purity
+                    </Label>
+                    <Select
+                      value={item.purity}
+                      onValueChange={(value) => updateItem(item.id, "purity", value)}
+                    >
+                      <SelectTrigger id={`item-purity-${index}`}>
+                        <SelectValue placeholder="Purity" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {purities.map((purity) => (
+                          <SelectItem key={purity.id || purity.value} value={purity.value}>
+                            {purity.value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Rate - takes 2 columns on mobile grid, 2 on md grid */}
+                  <div className="space-y-1 md:space-y-0 md:col-span-2">
+                    <Label htmlFor={`item-rate-${index}`} className="text-xs font-medium md:hidden">
+                      Rate
+                    </Label>
+                    <Input
+                      id={`item-rate-${index}`}
+                      type="number"
+                      placeholder="Rate"
+                      value={item.rate}
+                      onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
+                      required
+                      className="text-center"
+                    />
                   </div>
                 </div>
-                <div className="col-span-1 flex justify-center">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(item.id)}
-                    disabled={items.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                
+                {/* Total Amount & Delete Button */}
+                <div className="md:col-span-4 flex items-center justify-between md:justify-end space-x-2">
+                  <div className="flex flex-col items-start md:items-end md:col-span-3">
+                    <Label className="text-xs font-medium md:hidden">
+                      Amount
+                    </Label>
+                    <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted text-right w-full md:w-auto">
+                      ₹{(item.netWeight * item.rate).toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="md:col-span-1 flex justify-center pt-4 md:pt-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(item.id)}
+                      disabled={items.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <span className="sr-only">Remove Item</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Additional notes or payment instructions..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="payment-method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger id="payment-method">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map((method) => (
-                      <SelectItem key={method.id || method.value} value={method.value}>
-                        {method.value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Invoice Items</h3>
+            <Button type="button" variant="outline" size="sm" onClick={addItem}>
+              <Plus className="mr-2 h-4 w-4" /> Add Item
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Additional notes or payment instructions..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
             </div>
+            <div>
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map((method) => (
+                    <SelectItem key={method.id || method.value} value={method.value}>
+                      {method.value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-            <div className="space-y-2 text-right">
-              <div className="flex justify-between items-center text-sm">
-                <span>Subtotal:</span>
-                <span>₹{calculateSubtotal().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>IGST (1.5%):</span>
-                <span>₹{calculateIGST().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>CGST (1.5%):</span>
-                <span>₹{calculateCGST().toFixed(2)}</span>
-              </div>
-              <div className="h-px bg-border my-2" />
-              <div className="flex justify-between items-center font-medium">
-                <span>Total:</span>
-                <span>₹{calculateTotal().toFixed(2)}</span>
-              </div>
+          <div className="space-y-2 text-right">
+            <div className="flex justify-between items-center text-sm">
+              <span>Subtotal:</span>
+              <span>₹{calculateSubtotal().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span>IGST (1.5%):</span>
+              <span>₹{calculateIGST().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span>CGST (1.5%):</span>
+              <span>₹{calculateCGST().toFixed(2)}</span>
+            </div>
+            <div className="h-px bg-border my-2" />
+            <div className="flex justify-between items-center font-medium">
+              <span>Total:</span>
+              <span>₹{calculateTotal().toFixed(2)}</span>
             </div>
           </div>
         </div>

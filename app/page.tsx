@@ -24,7 +24,7 @@ const navigationTiles = [
   { name: "Stock", href: "/stock", icon: Package, description: "Track your inventory items" },
   { name: "Old Stock", href: "/old-stock", icon: Package, description: "Manage used or second-hand items" },
   { name: "Customers", href: "/customers", icon: Users, description: "View and manage customer information" },
-  { name: "Invoices", href: "/invoices", icon: Receipt, description: "Create and manage invoices" },
+  { name: "Sales", href: "/sales", icon: Receipt, description: "Create and manage sales" },
 ]
 
 // Define SVG motifs for jewelry-themed decorative elements

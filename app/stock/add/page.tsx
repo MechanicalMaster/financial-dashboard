@@ -20,11 +20,10 @@ import { useDB } from "@/contexts/db-context"
 import { useRouter } from "next/navigation"
 import { InventoryItem } from "@/lib/db"
 import { MasterDropdown } from "@/components/masters/master-dropdown"
-import { SupplierDropdown } from "@/components/inventory/supplier-dropdown"
 
 export default function AddStockItemPage() {
   const router = useRouter();
-  const { add, db, getAll } = useDB();
+  const { add, userDB, getAll } = useDB();
   
   const [itemName, setItemName] = useState("")
   const [itemCategory, setItemCategory] = useState("")
@@ -158,8 +157,8 @@ export default function AddStockItemPage() {
 
       console.log("Saving stock item:", newItem)
       
-      // Generate ID explicitly
-      const id = db.generateId('ITEM')
+      // Generate ID explicitly using userDB
+      const id = userDB.generateId('ITEM')
       newItem.id = id
       
       // Add to database
@@ -496,9 +495,10 @@ export default function AddStockItemPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="itemSupplier" className="font-medium">Supplier</Label>
-              <SupplierDropdown 
-                value={itemSupplier} 
-                onValueChange={setItemSupplier} 
+              <MasterDropdown
+                masterType="supplier"
+                value={itemSupplier}
+                onValueChange={setItemSupplier}
                 placeholder="Select a supplier"
                 className="w-full"
               />

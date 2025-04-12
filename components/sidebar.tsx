@@ -34,11 +34,12 @@ interface NavItemType {
 }
 
 const navigation: NavItemType[] = [
+  { name: "Home", href: "/", icon: Home },
   { name: "Purchases", href: "/purchases", icon: ShoppingCart },
   { name: "Stock", href: "/stock", icon: Package },
   { name: "Old Stock", href: "/old-stock", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "Invoices", href: "/invoices", icon: Receipt },
+  { name: "Sales", href: "/sales", icon: Receipt },
 ]
 
 const bottomNavigation: NavItemType[] = [
