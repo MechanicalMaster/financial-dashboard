@@ -4,21 +4,13 @@ export async function refreshMastersData() {
   try {
     console.log("[Initializers] Starting hard refresh of masters data");
     
-    try {
-      // First completely clear the masters table
-      await appDB.masters.clear();
-      console.log("[Initializers] Cleared masters table before refresh");
-    } catch (clearError) {
-      console.error("[Initializers] Error clearing masters table:", clearError);
-    }
-    
-    // First clean up any potential duplicates
-    await cleanupDuplicateMasters();
-    
-    // Then perform the hard refresh with clean data
+    // First, perform the hard refresh with potentially unclean data
     await appDB.hardRefreshMasters();
     
-    console.log("[Initializers] Masters data has been refreshed successfully");
+    // Then, clean up any duplicates that might have been introduced
+    await cleanupDuplicateMasters();
+    
+    console.log("[Initializers] Masters data has been refreshed and cleaned successfully");
     return true;
   } catch (error) {
     console.error("[Initializers] Error refreshing masters data:", error);

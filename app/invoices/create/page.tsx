@@ -17,6 +17,7 @@ import { useSettings } from "@/contexts/settings-context"
 import { toast } from "sonner"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { AddCustomerDialog } from "@/components/customers/add-customer-dialog"
 
 interface InvoiceItem {
   id: string
@@ -51,11 +52,13 @@ export default function CreateInvoicePage() {
     { id: generateUUID(), description: "", grossWeight: 0, netWeight: 0, purity: "", rate: 0 },
   ])
   const [notes, setNotes] = useState("")
-  const [paymentTerms, setPaymentTerms] = useState("30")
+  const [paymentMethod, setPaymentMethod] = useState("")
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([])
   const [purities, setPurities] = useState<{id?: string, value: string}[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<{id?: string, value: string}[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false)
 
   // Find the selected customer's full details
   const selectedCustomer = availableCustomers.find(c => c.name === customerName)
@@ -100,9 +103,53 @@ export default function CreateInvoicePage() {
         ])
       }
     }
+    
+    const fetchPaymentMethods = async () => {
+      try {
+        const paymentMethodData = await getMastersByType('payment_method')
+        
+        // Log the fetched data to inspect for duplicates
+        console.log("Fetched Payment Methods from DB:", paymentMethodData)
+        
+        if (paymentMethodData && paymentMethodData.length > 0) {
+          setPaymentMethods(paymentMethodData)
+          // Set default payment method if available
+          if (paymentMethodData.length > 0) {
+            const defaultMethod = paymentMethodData.find(m => 
+              m.value.toLowerCase().includes("net 30")
+            ) || paymentMethodData[0]
+            setPaymentMethod(defaultMethod.value)
+          }
+        } else {
+          // Fallback payment methods
+          const defaultMethods = [
+            { value: "Due on Receipt" },
+            { value: "Net 15" },
+            { value: "Net 30" },
+            { value: "Net 45" },
+            { value: "Net 60" },
+          ]
+          setPaymentMethods(defaultMethods)
+          setPaymentMethod("Net 30")
+        }
+      } catch (error) {
+        console.error("Error fetching payment methods:", error)
+        // Fallback payment methods
+        const defaultMethods = [
+          { value: "Due on Receipt" },
+          { value: "Net 15" },
+          { value: "Net 30" },
+          { value: "Net 45" },
+          { value: "Net 60" },
+        ]
+        setPaymentMethods(defaultMethods)
+        setPaymentMethod("Net 30")
+      }
+    }
 
     fetchCustomers()
     fetchPurities()
+    fetchPaymentMethods()
   }, [getMastersByType, getAll])
 
   // When customer is selected, auto-fill their mobile and address
@@ -156,6 +203,21 @@ export default function CreateInvoicePage() {
     return calculateSubtotal() + calculateIGST() + calculateCGST()
   }
 
+  // Extract payment terms from payment method
+  const extractPaymentTerms = (method: string): string => {
+    if (!method) return "0"
+    
+    if (method.toLowerCase().includes("receipt")) return "0"
+    
+    // Try to extract number from strings like "Net 30"
+    const match = method.match(/Net\s+(\d+)/i)
+    if (match && match[1]) {
+      return match[1]
+    }
+    
+    return "30" // Default to Net 30
+  }
+
   // Save invoice data to database
   const saveInvoice = async () => {
     if (!customerName) {
@@ -173,6 +235,9 @@ export default function CreateInvoicePage() {
       const igst = calculateIGST();
       const cgst = calculateCGST();
       const total = calculateTotal();
+      
+      // Extract payment terms days from payment method
+      const paymentTerms = extractPaymentTerms(paymentMethod)
       
       const invoiceData = {
         id: invoiceNumber,
@@ -192,6 +257,7 @@ export default function CreateInvoicePage() {
           amount: item.netWeight * item.rate
         })),
         notes,
+        paymentMethod,
         paymentTerms,
         subtotal,
         igst,
@@ -581,6 +647,28 @@ export default function CreateInvoicePage() {
     }
   }
 
+  // Handle when a new customer is added via dialog
+  const handleCustomerAdded = (newCustomer: any) => {
+    // Add to available customers list
+    setAvailableCustomers(prev => [...prev, newCustomer])
+    
+    // Auto-select the new customer
+    setCustomerName(newCustomer.name)
+    setCustomerMobile(newCustomer.phone)
+    setCustomerAddress(newCustomer.address)
+    
+    toast.success(`Customer "${newCustomer.name}" added and selected`)
+  }
+
+  // Handle customer selection change
+  const handleCustomerChange = (value: string) => {
+    if (value === "new-customer") {
+      setIsAddCustomerOpen(true)
+    } else {
+      setCustomerName(value)
+    }
+  }
+
   return (
     <div className="container max-w-5xl py-6">
       <div className="flex items-center justify-between mb-8">
@@ -612,11 +700,15 @@ export default function CreateInvoicePage() {
 
             <div>
               <Label htmlFor="customer-name">Customer Name</Label>
-              <Select value={customerName} onValueChange={setCustomerName} required>
+              <Select value={customerName} onValueChange={handleCustomerChange} required>
                 <SelectTrigger id="customer-name">
                   <SelectValue placeholder="Select a customer" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="new-customer" className="text-primary font-medium">
+                    + New Customer
+                  </SelectItem>
+                  <div className="h-px bg-muted my-1" />
                   {availableCustomers.map((customer) => (
                     <SelectItem key={customer.id} value={customer.name}>
                       {customer.name}
@@ -801,17 +893,17 @@ export default function CreateInvoicePage() {
                 />
               </div>
               <div>
-                <Label htmlFor="payment-terms">Payment Terms</Label>
-                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                  <SelectTrigger id="payment-terms">
-                    <SelectValue placeholder="Select payment terms" />
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger id="payment-method">
+                    <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">Due on Receipt</SelectItem>
-                    <SelectItem value="15">Net 15</SelectItem>
-                    <SelectItem value="30">Net 30</SelectItem>
-                    <SelectItem value="45">Net 45</SelectItem>
-                    <SelectItem value="60">Net 60</SelectItem>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method.id || method.value} value={method.value}>
+                        {method.value}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -862,6 +954,19 @@ export default function CreateInvoicePage() {
           </Button>
         </div>
       </form>
+      
+      {/* Add Customer Dialog */}
+      <AddCustomerDialog 
+        open={isAddCustomerOpen} 
+        onOpenChange={(open) => {
+          setIsAddCustomerOpen(open)
+          if (!open && customerName === "new-customer") {
+            // Reset customer selection if dialog is closed without adding
+            setCustomerName("")
+          }
+        }}
+        onCustomerAdded={handleCustomerAdded}
+      />
     </div>
   )
 } 

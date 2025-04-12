@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { PlusCircle, Search, Pencil, Trash, Eye } from "lucide-react"
+import { PlusCircle, Search, Pencil, Trash, Eye, Upload } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { 
@@ -69,9 +69,14 @@ export default function CustomersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground">Manage your customer information and track their transactions</p>
         </div>
-        <Button onClick={() => router.push("/customers/add")}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Customer
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => router.push("/customers/bulk-upload")}>
+            <Upload className="mr-2 h-4 w-4" /> Bulk Upload
+          </Button>
+          <Button onClick={() => router.push("/customers/add")}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Customer
+          </Button>
+        </div>
       </div>
 
       <Card>
