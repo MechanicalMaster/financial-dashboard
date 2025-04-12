@@ -200,7 +200,84 @@ export function PurchaseInvoicesList() {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* Mobile view (card layout) - hidden on medium screens and up */}
+      <div className="md:hidden space-y-4">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading purchase data...
+          </div>
+        ) : paginatedInvoices.length > 0 ? (
+          paginatedInvoices.map((invoice) => (
+            <div key={invoice.id} className="bg-card rounded-lg border shadow-sm p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-medium">{invoice.id}</h3>
+                  <p className="text-sm text-muted-foreground">{invoice.date}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">More</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={() => window.location.href = `/purchases/invoice/${invoice.id}`}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Package className="mr-2 h-4 w-4" />
+                      Mark as Received
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="grid grid-cols-2 gap-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Supplier:</span>
+                </div>
+                <div className="font-medium">{invoice.supplier}</div>
+                <div>
+                  <span className="text-muted-foreground">Invoice #:</span>
+                </div>
+                <div className="font-medium">{invoice.invoiceNumber}</div>
+                <div>
+                  <span className="text-muted-foreground">Amount:</span>
+                </div>
+                <div className="font-medium">₹{invoice.amount.toFixed(2)}</div>
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                </div>
+                <div>{getStatusBadge(invoice.status)}</div>
+                <div>
+                  <span className="text-muted-foreground">Payment:</span>
+                </div>
+                <div>{getPaymentStatusBadge(invoice.paymentStatus)}</div>
+                <div>
+                  <span className="text-muted-foreground">Items:</span>
+                </div>
+                <div className="font-medium">{invoice.items}</div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            No purchase invoices found.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop view (table layout) - hidden on small screens */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -249,16 +326,14 @@ export function PurchaseInvoicesList() {
                           <FileText className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => window.location.href = `/purchases/invoice/${invoice.id}/edit`}
-                        >
-                          <Package className="mr-2 h-4 w-4" />
-                          Update Status
+                        <DropdownMenuItem>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download PDF
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                          <Download className="mr-2 h-4 w-4" />
-                          Export Invoice
+                          <Package className="mr-2 h-4 w-4" />
+                          Mark as Received
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -268,7 +343,7 @@ export function PurchaseInvoicesList() {
             ) : (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  No purchase invoices found. Add your first purchase invoice to get started.
+                  No purchase invoices found.
                 </TableCell>
               </TableRow>
             )}

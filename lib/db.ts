@@ -78,7 +78,27 @@ export interface Invoice {
   amount: number;
   notes?: string;
   paymentTerms?: string;
+  paymentMethod?: string;
+  paymentPlan?: string;
   status: 'paid' | 'unpaid' | 'overdue' | 'booking';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BookingInvoice {
+  id?: string;
+  customerId: string;
+  customerName?: string;
+  customerMobile?: string;
+  customerAddress?: string;
+  bookingDate: Date;
+  items?: any[];
+  estimatedAmount?: number;
+  accumulatedAmount?: number;
+  notes?: string;
+  paymentMethod?: string;
+  paymentPlan?: string;
+  status: 'active' | 'completed' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -161,6 +181,9 @@ export interface ImageRecord {
   data: Blob;      // The actual image data
 }
 
+// --> Export InvoiceStatus type <--
+export type InvoiceStatus = 'paid' | 'unpaid' | 'overdue' | 'booking';
+
 // Define the User database class (for user-specific data)
 export class UserDB extends Dexie {
   users!: Table<User, string>;
@@ -168,6 +191,7 @@ export class UserDB extends Dexie {
   inventory!: Table<InventoryItem, string>;
   oldStock!: Table<OldStockItem, string>;
   invoices!: Table<Invoice, string>;
+  bookingInvoices!: Table<BookingInvoice, string>;
   purchases!: Table<Purchase, string>;
   settings!: Table<Settings, string>;
   analytics!: Table<Analytics, string>;
@@ -189,7 +213,7 @@ export class UserDB extends Dexie {
       images: 'filename' // <-- Add images table schema
     });
 
-    this.version(4).stores({
+    this.version(5).stores({
       users: 'id, phone',
       customers: 'id, name, email, phone',
       inventory: 'id, name, category, supplier',
@@ -198,12 +222,11 @@ export class UserDB extends Dexie {
       purchases: 'id, itemId, supplier',
       settings: 'id',
       analytics: 'id, type',
-      images: 'filename' // Ensure images table is in the latest version
+      images: 'filename',
+      bookingInvoices: 'id, customerId, bookingDate, status'
     }).upgrade(tx => {
-      // Example upgrade logic if needed, e.g., migrating old image references
-      // For now, just ensuring the schema is updated
-      console.log("Upgrading database to version 4...");
-      // Potentially add migration logic here if structure changes significantly
+      console.log("Upgrading database to version 5, adding bookingInvoices table...");
+      // No specific data migration needed for adding a new table
     });
   }
 
