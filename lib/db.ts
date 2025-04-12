@@ -1,4 +1,4 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, { Table, type EntityTable } from 'dexie';
 
 // Define interfaces for each table - User data tables
 export interface User {
@@ -27,12 +27,19 @@ export interface InventoryItem {
   category: string;
   description: string;
   quantity: number;
-  cost: number;
-  supplier: string;
-  weight?: number; // Weight in grams
-  metal?: string; // New field for metal type
-  purity?: string; // New field for purity
-  image?: string;
+  cost?: number;
+  price?: number;
+  supplier?: string;
+  weight?: number;
+  metal?: string;
+  purity?: string;
+  sku?: string;
+  barcode?: string;
+  location?: string;
+  lowStockThreshold?: number;
+  tags?: string[];
+  imageFilenames?: string[];
+  thumbnailUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +155,12 @@ export interface Master {
   updatedAt: Date;
 }
 
+// --> Add Interface for Image Records <--
+export interface ImageRecord {
+  filename: string; // Use filename as the key/index
+  data: Blob;      // The actual image data
+}
+
 // Define the User database class (for user-specific data)
 export class UserDB extends Dexie {
   users!: Table<User, string>;
@@ -158,6 +171,7 @@ export class UserDB extends Dexie {
   purchases!: Table<Purchase, string>;
   settings!: Table<Settings, string>;
   analytics!: Table<Analytics, string>;
+  images!: EntityTable<ImageRecord, 'filename'>; // <-- Add images table definition
 
   constructor() {
     super('UserDB');
@@ -171,7 +185,25 @@ export class UserDB extends Dexie {
       invoices: 'id, customerId, type, status',
       purchases: 'id, itemId, supplier',
       settings: 'id',
-      analytics: 'id, type'
+      analytics: 'id, type',
+      images: 'filename' // <-- Add images table schema
+    });
+
+    this.version(4).stores({
+      users: 'id, phone',
+      customers: 'id, name, email, phone',
+      inventory: 'id, name, category, supplier',
+      oldStock: 'id, name, category, status, purchaseDate, customerName',
+      invoices: 'id, customerId, type, status',
+      purchases: 'id, itemId, supplier',
+      settings: 'id',
+      analytics: 'id, type',
+      images: 'filename' // Ensure images table is in the latest version
+    }).upgrade(tx => {
+      // Example upgrade logic if needed, e.g., migrating old image references
+      // For now, just ensuring the schema is updated
+      console.log("Upgrading database to version 4...");
+      // Potentially add migration logic here if structure changes significantly
     });
   }
 
@@ -358,6 +390,23 @@ export class UserDB extends Dexie {
       console.error('Error cleaning up purchase data:', error);
       return false;
     }
+  }
+
+  // Add a helper to get an image by filename
+  async getImage(filename: string): Promise<ImageRecord | undefined> {
+    return this.images.get(filename);
+  }
+
+  // Add a helper to get multiple images by filenames
+  async getImages(filenames: string[]): Promise<ImageRecord[]> {
+    return this.images.bulkGet(filenames).then(results => 
+      results.filter(img => img !== undefined) as ImageRecord[]
+    );
+  }
+
+  // Add a helper to delete an image by filename
+  async deleteImage(filename: string): Promise<void> {
+    return this.images.delete(filename);
   }
 }
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, FileText, Save, UploadCloud } from "lucide-react"
+import { ArrowLeft, FileText, Save, UploadCloud, X } from "lucide-react"
 import Link from "next/link"
 import type { FormEvent } from "react"
 import { toast } from "sonner"
@@ -20,6 +20,7 @@ import { useDB } from "@/contexts/db-context"
 import { useRouter } from "next/navigation"
 import { InventoryItem } from "@/lib/db"
 import { MasterDropdown } from "@/components/masters/master-dropdown"
+import { createThumbnail } from "@/lib/utils"
 
 export default function AddStockItemPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function AddStockItemPage() {
   const [itemPurity, setItemPurity] = useState("")
   const [labelQuantity, setLabelQuantity] = useState("1")
   const [labelType, setLabelType] = useState("standard")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   
@@ -109,8 +110,14 @@ export default function AddStockItemPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0])
+      const files = Array.from(e.target.files)
+      setSelectedFiles(files)
     }
+  }
+
+  const handleRemoveFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index)
+    setSelectedFiles(newFiles)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -140,8 +147,44 @@ export default function AddStockItemPage() {
     setIsSubmitting(true)
 
     try {
-      // Create new stock item
+      // Generate ID first, as it's needed for image filenames
+      const id = userDB.generateId('ITEM');
+
+      const imageFilenames: string[] = []; // Array to store filenames
+      let thumbnailUrl: string | undefined = undefined;
+
+      // 1. Save Images to IndexedDB and collect filenames
+      if (selectedFiles.length > 0) {
+        // Create thumbnail from the first image
+        try {
+          const firstFile = selectedFiles[0];
+          const thumbnailBlob = await createThumbnail(firstFile, 300, 300);
+          const fileExtension = firstFile.name.split('.').pop();
+          const timestamp = Date.now();
+          const thumbnailFilename = `THUMB-${id}-${timestamp}.${fileExtension}`;
+          
+          // Save thumbnail to IndexedDB
+          await userDB.images.add({ filename: thumbnailFilename, data: thumbnailBlob });
+          thumbnailUrl = thumbnailFilename;
+        } catch (thumbError) {
+          console.error("Error creating thumbnail:", thumbError);
+          // Continue even if thumbnail creation fails
+        }
+
+        // Process all images
+        for (const [index, file] of selectedFiles.entries()) {
+          const fileExtension = file.name.split('.').pop();
+          const timestamp = Date.now();
+          const filename = `ITEM-${id}-${timestamp}-${index}.${fileExtension}`;
+
+          await userDB.images.add({ filename: filename, data: file });
+          imageFilenames.push(filename);
+        }
+      }
+
+      // Create new stock item object AFTER generating ID and saving images
       const newItem: InventoryItem = {
+        id: id,
         name: itemName,
         category: itemCategory,
         description: itemDescription || "",
@@ -151,20 +194,18 @@ export default function AddStockItemPage() {
         weight: itemWeight ? parseFloat(itemWeight) : undefined,
         metal: itemMetal || undefined,
         purity: itemPurity || undefined,
+        imageFilenames: imageFilenames,
+        thumbnailUrl: thumbnailUrl, // Add the thumbnail URL
         createdAt: new Date(),
         updatedAt: new Date()
       }
 
       console.log("Saving stock item:", newItem)
       
-      // Generate ID explicitly using userDB
-      const id = userDB.generateId('ITEM')
-      newItem.id = id
+      // 2. Add Inventory Item metadata to database
+      await add('inventory', newItem);
       
-      // Add to database
-      await add('inventory', newItem)
-      
-      toast.success("Stock item added successfully")
+      toast.success("Stock item added successfully with images")
       
       // Redirect back to stock page
       router.push('/stock')
@@ -548,23 +589,45 @@ export default function AddStockItemPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="itemImage" className="font-medium">Product Image</Label>
-              <div className="flex items-center">
-                <Input
-                  id="itemImage"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
+              <Label htmlFor="item-image">Product Image(s)</Label>
+              <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                <Input 
+                  id="item-image" 
+                  type="file" 
+                  multiple
+                  onChange={handleFileChange} 
+                  className="hidden" 
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => document.getElementById("itemImage")?.click()}
-                  className="w-full h-10"
-                >
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  {selectedFile ? selectedFile.name : "Upload Image"}
-                </Button>
+                <label htmlFor="item-image" className="cursor-pointer">
+                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Drag & drop images here, or click to select files
+                  </p>
+                  <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP, GIF (Max 5MB per file)</p>
+                </label>
               </div>
+              {selectedFiles.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img 
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index + 1}`}
+                        className="object-cover w-full h-full rounded-md"
+                        onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file))}
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleRemoveFile(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

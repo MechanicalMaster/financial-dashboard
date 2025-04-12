@@ -146,6 +146,38 @@ function SortDropdown({ onSortChange, onSortOrderToggle, sortOrder, sortField }:
   )
 }
 
+// Add this custom hook to load image data from IndexedDB
+function useImageFromDb(filename?: string): string | null {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!filename) return;
+    
+    const loadImage = async () => {
+      try {
+        const imageRecord = await userDB.getImage(filename);
+        if (imageRecord && imageRecord.data) {
+          const url = URL.createObjectURL(imageRecord.data);
+          setImageUrl(url);
+        }
+      } catch (error) {
+        console.error(`Error loading image ${filename}:`, error);
+      }
+    };
+    
+    loadImage();
+    
+    // Cleanup object URL on unmount
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [filename]);
+  
+  return imageUrl;
+}
+
 // Component for displaying a product card in grid view
 interface ProductCardProps {
   item: InventoryItem & { imageUrl?: string }
@@ -158,13 +190,47 @@ interface ProductCardProps {
 function ProductCard({ item, onDelete, onPrintLabel, onGenerateQR, id }: ProductCardProps) {
   const stockStatus = getStockStatus(item.quantity)
   
+  // Load thumbnail image or first image
+  const thumbnailUrl = useImageFromDb(item.thumbnailUrl);
+  const [firstImageUrl, setFirstImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Only try to load the first image if no thumbnail is available
+    if (!item.thumbnailUrl && item.imageFilenames && item.imageFilenames.length > 0) {
+      const loadFirstImage = async () => {
+        try {
+          const firstImageFilename = item.imageFilenames![0];
+          const imageRecord = await userDB.getImage(firstImageFilename);
+          if (imageRecord && imageRecord.data) {
+            const url = URL.createObjectURL(imageRecord.data);
+            setFirstImageUrl(url);
+          }
+        } catch (error) {
+          console.error('Error loading first image:', error);
+        }
+      };
+      
+      loadFirstImage();
+    }
+    
+    // Cleanup object URL on unmount
+    return () => {
+      if (firstImageUrl) {
+        URL.revokeObjectURL(firstImageUrl);
+      }
+    };
+  }, [item.thumbnailUrl, item.imageFilenames]);
+  
+  // Determine which image URL to use (thumbnail, first image, or default)
+  const displayImageUrl = thumbnailUrl || firstImageUrl || item.imageUrl;
+  
   return (
     <Card className="overflow-hidden">
       <CardHeader className="p-0">
         <div className="bg-muted h-40 flex items-center justify-center">
-          {item.imageUrl ? (
+          {displayImageUrl ? (
             <img 
-              src={item.imageUrl} 
+              src={displayImageUrl} 
               alt={item.name || 'Product'} 
               className="h-full w-full object-cover"
             />
@@ -179,14 +245,15 @@ function ProductCard({ item, onDelete, onPrintLabel, onGenerateQR, id }: Product
             <h3 className="font-medium truncate">{item.name}</h3>
             <p className="text-sm text-muted-foreground">{item.category}</p>
           </div>
-          <StockStatusBadge status={stockStatus} />
         </div>
         
         <div className="text-sm space-y-1 mt-3 mb-3">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Quantity:</span>
-            <span>{item.quantity}</span>
-          </div>
+          {item.weight !== undefined && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Weight:</span>
+              <span>{item.weight}g</span>
+            </div>
+          )}
           {item.metal && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Metal:</span>
@@ -197,18 +264,6 @@ function ProductCard({ item, onDelete, onPrintLabel, onGenerateQR, id }: Product
             <div className="flex justify-between">
               <span className="text-muted-foreground">Purity:</span>
               <span>{item.purity}</span>
-            </div>
-          )}
-          {item.weight && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Weight:</span>
-              <span>{item.weight}g</span>
-            </div>
-          )}
-          {item.cost !== undefined && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Cost:</span>
-              <span>₹{item.cost.toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -324,8 +379,7 @@ function CategorySection({
                 <TableRow>
                   <TableHead className="w-[200px]">Name</TableHead>
                   <TableHead>Metal/Purity</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Cost</TableHead>
+                  <TableHead>Weight</TableHead>
                   <TableHead>Date Added</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -342,12 +396,8 @@ function CategorySection({
                         {!item.metal && item.purity}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.quantity}
-                          <StockStatusBadge status={stockStatus} />
-                        </div>
+                        {item.weight !== undefined ? `${item.weight} g` : '-'}
                       </TableCell>
-                      <TableCell>{item.cost ? `₹${item.cost.toFixed(2)}` : '-'}</TableCell>
                       <TableCell>{formatDate(item.createdAt || '')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -452,30 +502,38 @@ export default function StockPage() {
         
         // Sort the items
         items.sort((a, b) => {
-          if (a[sortField as keyof InventoryItem] < b[sortField as keyof InventoryItem]) {
-            return sortOrder === "asc" ? -1 : 1
+          const valA = a[sortField as keyof InventoryItem];
+          const valB = b[sortField as keyof InventoryItem];
+          
+          // Handle undefined or null values
+          if (valA === undefined || valA === null) return sortOrder === "asc" ? -1 : 1;
+          if (valB === undefined || valB === null) return sortOrder === "asc" ? 1 : -1;
+          
+          // Compare values
+          if (valA < valB) {
+            return sortOrder === "asc" ? -1 : 1;
           }
-          if (a[sortField as keyof InventoryItem] > b[sortField as keyof InventoryItem]) {
-            return sortOrder === "asc" ? 1 : -1
+          if (valA > valB) {
+            return sortOrder === "asc" ? 1 : -1;
           }
-          return 0
-        })
+          return 0;
+        });
         
-        setInventoryData(items)
+        setInventoryData(items);
         
         // Extract unique categories
-        const uniqueCategories = [...new Set(items.map(item => item.category))].filter(Boolean) as string[]
-        setCategories(uniqueCategories)
+        const uniqueCategories = [...new Set(items.map(item => item.category))].filter(Boolean) as string[];
+        setCategories(uniqueCategories);
       } catch (error) {
-        console.error("Error fetching inventory:", error)
-        toast.error("Failed to load inventory items")
+        console.error("Error fetching inventory:", error);
+        toast.error("Failed to load inventory items");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
     
-    fetchInventory()
-  }, [getAll, sortField, sortOrder])
+    fetchInventory();
+  }, [getAll, sortField, sortOrder]);
   
   // Effect to ensure client-side mounting before using browser APIs
   useEffect(() => {
@@ -1119,8 +1177,7 @@ export default function StockPage() {
                 <TableRow>
                   <TableHead className="w-[200px]">Name</TableHead>
                   <TableHead>Metal/Purity</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Cost</TableHead>
+                  <TableHead>Weight</TableHead>
                   <TableHead>Date Added</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -1137,12 +1194,8 @@ export default function StockPage() {
                         {!item.metal && item.purity}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.quantity}
-                          <StockStatusBadge status={stockStatus} />
-                        </div>
+                        {item.weight !== undefined ? `${item.weight} g` : '-'}
                       </TableCell>
-                      <TableCell>{item.cost ? `₹${item.cost.toFixed(2)}` : '-'}</TableCell>
                       <TableCell>{formatDate(item.createdAt || '')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
