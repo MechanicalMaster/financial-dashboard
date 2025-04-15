@@ -111,7 +111,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-            <Link href="/" className="text-sm text-amber-600 hover:text-amber-700">
+            <Link href="/" className="text-sm text-primary hover:text-primary/80">
               Back to Home
             </Link>
           </div>
@@ -232,17 +232,17 @@ export default function RegisterPage() {
 
             <Button 
               type="submit" 
-              className="w-full bg-amber-600 hover:bg-amber-700" 
+              className="w-full bg-primary hover:bg-primary/80" 
               disabled={loading}
             >
-              {loading ? "Creating account..." : "Register"}
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center w-full">
             <span className="text-sm text-muted-foreground">Already have an account?</span>{" "}
-            <Link href="/login" className="text-sm text-amber-600 hover:underline">
+            <Link href="/login" className="text-sm text-primary hover:underline">
               Log in
             </Link>
           </div>
@@ -253,4 +253,4 @@ export default function RegisterPage() {
       </Card>
     </div>
   )
-} 
+}

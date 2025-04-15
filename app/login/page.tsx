@@ -169,7 +169,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">Login</CardTitle>
-            <Link href="/" className="text-sm text-amber-600 hover:text-amber-700">
+            <Link href="/" className="text-sm text-primary hover:text-primary/80">
               Back to Home
             </Link>
           </div>
@@ -224,7 +224,7 @@ export default function LoginPage() {
                 <div className="flex justify-end">
                   <Link 
                     href="/reset-password" 
-                    className="text-sm text-amber-600 hover:underline"
+                    className="text-sm text-primary hover:underline"
                   >
                     Forgot password?
                   </Link>
@@ -232,7 +232,7 @@ export default function LoginPage() {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-amber-600 hover:bg-amber-700" 
+                  className="w-full bg-primary hover:bg-primary/80" 
                   disabled={loading}
                 >
                   {loading ? "Logging in..." : "Login with Email"}
@@ -270,7 +270,7 @@ export default function LoginPage() {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-amber-600 hover:bg-amber-700" 
+                    className="w-full bg-primary hover:bg-primary/80" 
                     disabled={loading}
                   >
                     {loading ? "Sending OTP..." : "Send OTP"}
@@ -311,7 +311,7 @@ export default function LoginPage() {
                     </Button>
                     <Button 
                       type="submit" 
-                      className="bg-amber-600 hover:bg-amber-700" 
+                      className="bg-primary hover:bg-primary/80" 
                       disabled={loading}
                     >
                       {loading ? "Verifying..." : "Verify OTP"}
@@ -326,7 +326,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col space-y-4 mt-2">
           <div className="text-center w-full">
             <span className="text-sm text-muted-foreground">Don't have an account?</span>{" "}
-            <Link href="/register" className="text-sm text-amber-600 hover:underline">
+            <Link href="/register" className="text-sm text-primary hover:underline">
               Register
             </Link>
           </div>
@@ -334,4 +334,4 @@ export default function LoginPage() {
       </Card>
     </div>
   )
-} 
+}

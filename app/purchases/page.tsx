@@ -16,7 +16,6 @@ export default function PurchasesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Purchases</h1>
-          <p className="text-muted-foreground">Manage your purchase invoices and suppliers</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
@@ -52,4 +51,3 @@ export default function PurchasesPage() {
     </div>
   )
 }
-

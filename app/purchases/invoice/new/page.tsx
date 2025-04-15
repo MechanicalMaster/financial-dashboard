@@ -141,7 +141,6 @@ export default function NewPurchaseInvoicePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Add New Purchase Invoice</h1>
-          <p className="text-muted-foreground">Record a new purchase invoice from your supplier</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleSubmit} disabled={isSubmitting}>
@@ -334,4 +333,4 @@ export default function NewPurchaseInvoicePage() {
       </form>
     </div>
   )
-} 
+}

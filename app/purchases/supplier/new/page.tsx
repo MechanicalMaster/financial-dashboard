@@ -84,7 +84,6 @@ export default function NewSupplierPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Add New Supplier</h1>
-          <p className="text-muted-foreground">Add details about a new supplier to your system</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleSubmit} disabled={isSubmitting}>
@@ -192,4 +191,4 @@ export default function NewSupplierPage() {
       </form>
     </div>
   )
-} 
+}

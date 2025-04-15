@@ -35,7 +35,7 @@ export function TopNav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-amber-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-4">
           <Button 
@@ -49,15 +49,15 @@ export function TopNav() {
           </Button>
           <div className="hidden md:block">
             <nav className="flex items-center space-x-2">
-              <Link href={getPath("/")} className="text-sm font-medium text-amber-900 hover:text-amber-700">
+              <Link href={getPath("/")} className="text-sm font-medium text-primary hover:text-primary/80">
                 Home
               </Link>
               {pathSegments.map((segment, index) => (
                 <React.Fragment key={segment}>
-                  <span className="text-amber-300">/</span>
+                  <span className="text-muted-foreground">/</span>
                   <Link 
                     href={`/${pathSegments.slice(0, index + 1).join("/")}`} 
-                    className="text-sm font-medium text-amber-900 hover:text-amber-700"
+                    className="text-sm font-medium text-primary hover:text-primary/80"
                   >
                     {segment.charAt(0).toUpperCase() + segment.slice(1)}
                   </Link>
@@ -75,10 +75,10 @@ export function TopNav() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-amber-50">
-                <Avatar className="h-8 w-8 ring-2 ring-amber-200">
-                  <AvatarImage src={settings.avatar} alt={settings.fullName} />
-                  <AvatarFallback className="bg-amber-100 text-amber-900">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-accent">
+                <Avatar className="h-8 w-8 ring-2 ring-border">
+                  <AvatarImage src={settings.profilePhoto} alt={settings.fullName} />
+                  <AvatarFallback className="bg-accent text-primary">
                     {settings.fullName
                       .split(" ")
                       .map((n) => n[0])
@@ -87,24 +87,24 @@ export function TopNav() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 border-amber-100" align="end" forceMount>
+            <DropdownMenuContent className="w-56 border-border" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none text-amber-900">{settings.fullName}</p>
-                  <p className="text-xs leading-none text-amber-600">{settings.email}</p>
+                  <p className="text-sm font-medium leading-none text-primary">{settings.fullName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{settings.email}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-amber-100" />
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="text-amber-900 hover:text-amber-700 hover:bg-amber-50">Profile</Link>
+                <Link href="/settings" className="text-primary hover:text-primary/80 hover:bg-accent">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="text-amber-900 hover:text-amber-700 hover:bg-amber-50">Settings</Link>
+                <Link href="/settings" className="text-primary hover:text-primary/80 hover:bg-accent">Settings</Link>
               </DropdownMenuItem>
               {isAuthenticated && (
                 <DropdownMenuItem 
                   onClick={logout}
-                  className="text-amber-900 hover:text-amber-700 hover:bg-amber-50"
+                  className="text-primary hover:text-primary/80 hover:bg-accent"
                 >
                   Log out
                 </DropdownMenuItem>
@@ -116,4 +116,3 @@ export function TopNav() {
     </header>
   )
 }
-

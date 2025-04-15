@@ -178,9 +178,9 @@ export default function HomePage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-background to-white relative overflow-hidden">
         {/* Decorative Background Motifs with shimmer animation */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none text-amber-700">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none text-primary">
           {/* Top Left Mandala - Hide on very small screens */}
           <motion.div 
             className="absolute -top-20 -left-20 transform rotate-12 hidden sm:block"
@@ -265,14 +265,14 @@ export default function HomePage() {
         {/* Content Container with frosted glass effect */}
         <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
           <div className="mb-2 sm:mb-4">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
               Welcome to {settings?.firmDetails?.firmName || "Kuber"}
             </h1>
           </div>
           
           {/* Decorative Header Line with shimmer - Hide on very small screens */}
           <motion.div 
-            className="w-full flex justify-center mb-6 sm:mb-8 text-amber-700 overflow-hidden hidden sm:flex"
+            className="w-full flex justify-center mb-6 sm:mb-8 text-primary overflow-hidden hidden sm:flex"
             animate={{ 
               opacity: [0.6, 0.9, 0.6] 
             }}
@@ -294,25 +294,25 @@ export default function HomePage() {
                 className="group"
               >
                 <motion.div 
-                  className="h-full flex flex-col bg-white/90 backdrop-blur-sm border border-amber-100 rounded-lg overflow-hidden shadow-sm transition-all duration-200"
+                  className="h-full flex flex-col bg-white/90 backdrop-blur-sm border border-border rounded-lg overflow-hidden shadow-sm transition-all duration-200"
                   whileHover={{ 
                     scale: 1.02,
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                    borderColor: "rgba(217, 119, 6, 0.5)"
+                    borderColor: "hsl(var(--primary) / 0.5)"
                   }}
                 >
                   <div className="flex-1 p-4 md:p-6 flex flex-col items-center text-center">
                     <motion.div 
-                      className="p-3 rounded-full bg-amber-50 text-amber-600 mb-3 group-hover:bg-amber-100 transition-colors"
+                      className="p-3 rounded-full bg-accent text-primary mb-3 group-hover:bg-accent transition-colors"
                       whileHover={{ 
                         scale: 1.1,
-                        backgroundColor: "rgba(251, 191, 36, 0.2)"
+                        backgroundColor: "hsl(var(--accent))"
                       }}
                     >
                       <tile.icon className="h-6 w-6 sm:h-7 sm:w-7" />
                     </motion.div>
-                    <h3 className="font-semibold text-amber-900 mb-1 text-sm sm:text-base">{tile.name}</h3>
-                    <p className="text-xs text-amber-600 hidden sm:block">{tile.description}</p>
+                    <h3 className="font-semibold text-primary mb-1 text-sm sm:text-base">{tile.name}</h3>
+                    <p className="text-xs text-primary hidden sm:block">{tile.description}</p>
                   </div>
                 </motion.div>
               </Link>
@@ -324,7 +324,7 @@ export default function HomePage() {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-amber-50 to-white overflow-hidden">
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-background to-white overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -338,13 +338,13 @@ export default function HomePage() {
             ease: "linear"
           }}
         >
-          <div className="w-full h-full bg-gradient-to-br from-amber-200/20 via-transparent to-transparent rounded-full" />
+          <div className="w-full h-full bg-gradient-to-br from-accent/20 via-transparent to-transparent rounded-full" />
         </motion.div>
       </div>
 
       {/* Top Navigation */}
       <motion.nav
-        className="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-amber-100"
+        className="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-border"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6 }}
@@ -352,7 +352,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Diamond className="h-8 w-8 text-amber-600" />
+              <Diamond className="h-8 w-8 text-primary" />
               <span className="ml-2 text-xl font-bold text-gray-900">Kuber</span>
             </div>
             <div className="flex items-center gap-4">
@@ -374,7 +374,7 @@ export default function HomePage() {
               <Button
                 onClick={handleLogin}
                 variant="ghost"
-                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                className="text-primary hover:text-primary hover:bg-accent"
               >
                 {t("login")}
               </Button>
@@ -397,21 +397,7 @@ export default function HomePage() {
           className="relative z-10 mb-8"
         >
           <motion.h1 
-            className="text-5xl md:text-7xl font-bold mb-4"
-            style={{
-              background: "linear-gradient(to right, #92400e, #f59e0b, #92400e)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundSize: "200% auto",
-            }}
-            animate={{
-              backgroundPosition: ["0%", "200%"],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            className="text-5xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"
           >
             {settings?.firmDetails?.firmName || "Kuber"}
           </motion.h1>
@@ -426,21 +412,21 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Button 
-            size="lg" 
-            className="bg-amber-600 hover:bg-amber-700"
-            onClick={handleGetStarted}
-          >
-            {t("getStarted")}
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="border-amber-600 text-amber-600 hover:bg-amber-50"
-            onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            {t("learnMore")}
-          </Button>
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/80"
+              onClick={handleGetStarted}
+            >
+              {t("getStarted")}
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-accent"
+              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              {t("learnMore")}
+            </Button>
         </motion.div>
 
         {/* Stats */}
@@ -455,7 +441,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">1000+</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-primary mb-2">1000+</h3>
             <p className="text-gray-600">{t("activeUsers")}</p>
           </motion.div>
           <motion.div 
@@ -463,7 +449,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">₹10Cr+</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-primary mb-2">₹10Cr+</h3>
             <p className="text-gray-600">{t("transactionsProcessed")}</p>
           </motion.div>
           <motion.div 
@@ -471,7 +457,7 @@ export default function HomePage() {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h3 className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">98%</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-primary mb-2">98%</h3>
             <p className="text-gray-600">{t("customerSatisfaction")}</p>
           </motion.div>
         </motion.div>
@@ -511,7 +497,7 @@ export default function HomePage() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 400 }}
                   >
-                    <feature.icon className="w-10 h-10 sm:w-12 sm:h-12 text-amber-600 mb-4" />
+                    <feature.icon className="w-10 h-10 sm:w-12 sm:h-12 text-primary mb-4" />
                   </motion.div>
                   <h3 className="text-lg sm:text-xl font-semibold mb-2">{t(feature.title)}</h3>
                   <p className="text-sm sm:text-base text-gray-600">{t(feature.description)}</p>
@@ -524,7 +510,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <motion.footer 
-        className="relative bg-amber-50 py-12 px-4 text-center overflow-hidden"
+        className="relative bg-accent py-12 px-4 text-center overflow-hidden"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
@@ -548,7 +534,7 @@ export default function HomePage() {
           </p>
           <Button 
             size="lg" 
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary/80"
             onClick={handleGetStarted}
           >
             {t("startJourney")}
@@ -558,4 +544,3 @@ export default function HomePage() {
     </div>
   )
 }
-

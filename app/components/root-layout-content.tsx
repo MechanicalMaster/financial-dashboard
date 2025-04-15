@@ -33,7 +33,7 @@ export function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   // For authenticated users on private routes or home page, show the app layout
   return (
-    <div className="min-h-screen flex bg-amber-50/20">
+    <div className="min-h-screen flex bg-accent/20">
       <Sidebar />
       <div className="flex-1 flex flex-col transition-all duration-200 ease-in-out">
         <TopNav />
@@ -43,4 +43,4 @@ export function RootLayoutContent({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   )
-} 
+}

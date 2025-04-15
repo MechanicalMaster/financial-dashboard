@@ -677,11 +677,11 @@ export default function CreateInvoicePage() {
             variant="ghost"
             size="icon"
             onClick={() => router.push(getPath("/sales"))}
-            className="hover:bg-amber-50"
+            className="hover:bg-accent"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-semibold text-amber-900">Create New Invoice</h1>
+          <h1 className="text-2xl font-semibold text-primary">Create New Invoice</h1>
         </div>
       </div>
 
@@ -965,7 +965,7 @@ export default function CreateInvoicePage() {
           <Button 
             type="button" 
             variant="outline" 
-            className="border-amber-600 text-amber-600 hover:bg-amber-50"
+            className="border-primary text-primary hover:bg-accent"
             onClick={handlePrintInvoice}
             disabled={isPrinting}
           >
@@ -974,7 +974,7 @@ export default function CreateInvoicePage() {
           </Button>
           <Button 
             type="submit" 
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary/80"
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Create Invoice"}
@@ -996,4 +996,4 @@ export default function CreateInvoicePage() {
       />
     </div>
   )
-} 
+}

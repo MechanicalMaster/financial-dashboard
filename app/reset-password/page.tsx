@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
         <CardHeader className="space-y-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-            <Link href="/login" className="text-sm text-amber-600 hover:text-amber-700 flex items-center">
+            <Link href="/login" className="text-sm text-primary hover:text-primary/80 flex items-center">
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Login
             </Link>
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
                 <p className="mt-2">
                   <Button 
                     variant="link" 
-                    className="p-0 h-auto text-amber-600"
+                    className="p-0 h-auto text-primary"
                     onClick={() => setIsResetSent(false)}
                   >
                     Try another email address
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-amber-600 hover:bg-amber-700" 
+                className="w-full bg-primary hover:bg-primary/80" 
                 disabled={loading}
               >
                 {loading ? "Sending..." : "Send Reset Link"}
@@ -130,13 +130,13 @@ export default function ResetPasswordPage() {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center w-full">
             <span className="text-sm text-muted-foreground">Remember your password?</span>{" "}
-            <Link href="/login" className="text-sm text-amber-600 hover:underline">
+            <Link href="/login" className="text-sm text-primary hover:underline">
               Log in
             </Link>
           </div>
           <div className="text-center w-full">
             <span className="text-sm text-muted-foreground">Don't have an account?</span>{" "}
-            <Link href="/register" className="text-sm text-amber-600 hover:underline">
+            <Link href="/register" className="text-sm text-primary hover:underline">
               Register
             </Link>
           </div>
@@ -144,4 +144,4 @@ export default function ResetPasswordPage() {
       </Card>
     </div>
   )
-} 
+}

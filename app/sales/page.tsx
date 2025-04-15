@@ -301,15 +301,15 @@ export default function SalesPage() {
     <div className="container py-6">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-amber-900">Sales</h1>
+          <h1 className="text-2xl font-semibold text-primary">Sales</h1>
           <div className="flex flex-col xs:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-4">
             <Link href={getPath("/sales/create-booking")} className="w-full sm:w-auto">
-              <Button variant="outline" className="hover:bg-amber-50 w-full sm:w-auto">
+              <Button variant="outline" className="hover:bg-accent w-full sm:w-auto">
                 <Calendar className="mr-2 h-4 w-4" /> Create Booking
               </Button>
             </Link>
             <Link href={getPath("/sales/create")} className="w-full sm:w-auto">
-              <Button className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
+              <Button className="bg-primary hover:bg-primary/80 w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> Create Invoice
               </Button>
             </Link>
@@ -372,7 +372,7 @@ export default function SalesPage() {
                     filteredInvoices
                       .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                       .map((invoice) => (
-                        <div key={invoice.id || 'unknown'} className="bg-card rounded-lg border border-amber-200 shadow-sm p-4">
+                        <div key={invoice.id || 'unknown'} className="bg-card rounded-lg border border-border shadow-sm p-4">
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-medium">{invoice.id || 'Unknown'}</h3>
@@ -417,7 +417,7 @@ export default function SalesPage() {
                 </div>
 
                 {/* Desktop view (table layout) - hidden on small screens */}
-                <div className="hidden md:block rounded-lg border border-amber-200">
+                <div className="hidden md:block rounded-lg border border-border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -498,4 +498,3 @@ export default function SalesPage() {
     </div>
   )
 }
-

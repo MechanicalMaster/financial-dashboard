@@ -92,8 +92,8 @@ export function Sidebar() {
           className={cn(
             "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
             pathname === item.href
-              ? "bg-amber-50 text-amber-900 border border-amber-200"
-              : "text-amber-700 hover:bg-amber-50 hover:text-amber-900 hover:border hover:border-amber-100",
+              ? "bg-accent text-primary border border-border"
+              : "text-foreground hover:bg-accent hover:text-primary hover:border hover:border-border",
             isCollapsed && "justify-center px-2",
           )}
         >
@@ -113,7 +113,7 @@ export function Sidebar() {
     <TooltipProvider>
       <>
         <button
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background rounded-md shadow-md hover:bg-amber-50 transition-colors"
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background rounded-md shadow-md hover:bg-accent transition-colors"
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           aria-label="Toggle sidebar"
         >
@@ -133,11 +133,11 @@ export function Sidebar() {
             "shadow-lg lg:shadow-none"
           )}
         >
-          <div className="border-b border-amber-100">
+          <div className="border-b border-border">
             <div className={cn("flex h-16 items-center gap-2 px-4", isCollapsed && "justify-center px-2")}>
               {!isCollapsed && (
                 <Link href={getPath("/")} className="flex items-center font-semibold">
-                  <span className="text-lg bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">{settings?.firmDetails?.firmName || "Kuber"}</span>
+                  <span className="text-lg text-primary">{settings?.firmDetails?.firmName || "Kuber"}</span>
                 </Link>
               )}
               <Button
@@ -158,7 +158,7 @@ export function Sidebar() {
               ))}
             </nav>
           </div>
-          <div className="border-t border-amber-100 p-2">
+          <div className="border-t border-border p-2">
             <nav className="space-y-1">
               {bottomNavigation.map((item) => (
                 <NavItem key={item.name} item={item} isBottom />
@@ -169,7 +169,7 @@ export function Sidebar() {
                     onClick={logout}
                     className={cn(
                       "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors w-full",
-                      "text-amber-700 hover:bg-amber-50 hover:text-amber-900 hover:border hover:border-amber-100",
+                      "text-foreground hover:bg-accent hover:text-primary hover:border hover:border-border",
                       isCollapsed && "justify-center px-2",
                     )}
                   >
@@ -190,4 +190,3 @@ export function Sidebar() {
     </TooltipProvider>
   )
 }
-
